@@ -1,19 +1,54 @@
 // subscription_category.dart
 // LifeCostTracker
 // Created by LifeCostTracker Team
+// 订阅分类
+// Subscription category
 
+/// Subscription category enum
+/// 订阅分类枚举
 enum SubscriptionCategory {
+  /// Streaming services
+  /// 流媒体
   streaming,
+
+  /// Productivity tools
+  /// 生产力
   productivity,
+
+  /// Food delivery services
+  /// 外卖
   foodDelivery,
+
+  /// Fitness services
+  /// 健身
   fitness,
+
+  /// News services
+  /// 新闻
   news,
+
+  /// Cloud services/tools
+  /// 云服务/工具
   cloudServices,
+
+  /// Digital peripherals
+  /// 数码外设
   digitalPeripherals,
+
+  /// Gaming services
+  /// 游戏娱乐
   gaming,
+
+  /// Music streaming services
+  /// 音乐串流
   musicStreaming,
+
+  /// Other categories
+  /// 其他
   other;
 
+  /// Display name for the subscription category in Chinese
+  /// 订阅分类的中文显示名称
   String get displayName {
     switch (this) {
       case SubscriptionCategory.streaming:
@@ -39,6 +74,8 @@ enum SubscriptionCategory {
     }
   }
 
+  /// System icon name for the subscription category
+  /// 订阅分类的系统图标名称
   String get systemIconName {
     switch (this) {
       case SubscriptionCategory.streaming:
