@@ -245,9 +245,12 @@
 
 ---
 
-## Phase 12: Testing
-### 12.1 Unit Tests
-- [ ] Write unit tests for Domain entities
+## Phase 12: Testing (进行中)
+### 12.1 Unit Tests (进行中)
+- [x] Write unit tests for Expense entity
+- [x] Write unit tests for CreditAccount entity
+- [x] Write unit tests for Subscription entity
+- [ ] Write unit tests for WishlistItem entity
 - [ ] Write unit tests for Use Cases
 - [ ] Write unit tests for ViewModels (80% coverage target)
 - [ ] Write unit tests for Repository implementations
