@@ -11,6 +11,14 @@ import '../viewmodels/all_items_list_view_model.dart';
 import 'add_new_item_sheet.dart';
 import 'item_detail_view.dart';
 
+// Import types from viewmodels
+// 从 viewmodels 导入类型
+import '../viewmodels/all_items_list_view_model.dart' show
+    DisplayItem,
+    ItemSortOption,
+    ItemFilterOption,
+    CostEffectivenessTier;
+
 /// Home Dashboard View - main screen of the app
 /// 主页仪表板视图 - 应用的主屏幕
 class HomeDashboardView extends StatefulWidget {
@@ -234,13 +242,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
 
   /// Build item card
   /// 构建物品卡片
-  Widget _buildItemCard(BuildContext context, dynamic item) {
-    // Note: This is a placeholder - we need to use the actual DisplayItem type
-    // 注：这是占位符 - 我们需要使用实际的 DisplayItem 类型
-    // For now, let's assume item has these properties
-    // 现在，让我们假设 item 有这些属性
-    
-    final String name = item.name ?? 'Unknown';
+  Widget _buildItemCard(BuildContext context, DisplayItem item) {
+    final String name = item.name;
     final String? category = item.category;
     final double? dailyCost = item.dailyCost;
     final String? type = item.type;
@@ -305,43 +308,35 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
 
   /// Get tier label
   /// 获取等级标签
-  String? _getTierLabel(dynamic tier) {
-    if (tier == null) return null;
-    final tierName = tier.toString().split('.').last;
-    switch (tierName) {
-      case 'divine':
+  String? _getTierLabel(CostEffectivenessTier tier) {
+    switch (tier) {
+      case CostEffectivenessTier.divine:
         return '神仙性价比';
-      case 'excellent':
+      case CostEffectivenessTier.excellent:
         return '超值';
-      case 'good':
+      case CostEffectivenessTier.good:
         return '优秀';
-      case 'fair':
+      case CostEffectivenessTier.fair:
         return '一般';
-      case 'poor':
+      case CostEffectivenessTier.poor:
         return '不值得';
-      default:
-        return null;
     }
   }
 
   /// Get tier color
   /// 获取等级颜色
-  Color _getTierColor(dynamic tier, BuildContext context) {
-    if (tier == null) return Colors.grey;
-    final tierName = tier.toString().split('.').last;
-    switch (tierName) {
-      case 'divine':
+  Color _getTierColor(CostEffectivenessTier tier, BuildContext context) {
+    switch (tier) {
+      case CostEffectivenessTier.divine:
         return Colors.green;
-      case 'excellent':
+      case CostEffectivenessTier.excellent:
         return Colors.blue;
-      case 'good':
+      case CostEffectivenessTier.good:
         return Colors.orange;
-      case 'fair':
+      case CostEffectivenessTier.fair:
         return Colors.orange.shade300;
-      case 'poor':
+      case CostEffectivenessTier.poor:
         return Colors.red;
-      default:
-        return Colors.grey;
     }
   }
 
