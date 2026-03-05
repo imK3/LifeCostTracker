@@ -88,13 +88,13 @@
 - [x] Create GetUpcomingObligationsUseCase
 - [x] Create AddWishlistItemUseCase
 - [x] Create CalculateAverageDailyCostUseCase
-- [ ] Create CheckAffordabilityUseCase
+- [x] Create CheckAffordabilityUseCase
+- [x] Create CalculateDailyCostBreakdownUseCase
+- [x] Create CheckWishlistDailyCostImpactUseCase
+- [x] Create CalculateWishlistDailySavingsTargetUseCase
 - [ ] Create GenerateMonthlyReportUseCase
-- [ ] Create CalculateDailyCostBreakdownUseCase
 - [ ] Create GenerateDailyCostTrendUseCase
-- [ ] Create CheckWishlistDailyCostImpactUseCase
 - [ ] Create CompareWishlistDailyCostsUseCase
-- [ ] Create CalculateWishlistDailySavingsTargetUseCase
 
 ### 7.3 Repository Interfaces ✅
 - [x] Create ExpenseRepository protocol
