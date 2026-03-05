@@ -55,7 +55,7 @@
 
 ---
 
-## Phase 7: Domain Layer Implementation (进行中)
+## Phase 7: Domain Layer Implementation ✅
 ### 7.1 Core Entities (Swift version deprecated, switching to Flutter/Dart)
 - [x] Create Expense entity (Swift version, deprecated)
 - [x] Create ExpenseCategory enum (Swift version, deprecated)
@@ -104,21 +104,21 @@
 
 ---
 
-## Phase 8: Data Layer Implementation (Flutter/Hive)
-### 8.1 Hive Data Model Setup
-- [ ] Initialize Hive database in main.dart
-- [ ] Create Hive TypeAdapters for all entities
-  - [ ] ExpenseAdapter
-  - [ ] ExpenseCategoryAdapter
-  - [ ] CreditAccountAdapter
-  - [ ] CreditAccountTypeAdapter
-  - [ ] SubscriptionAdapter
-  - [ ] BillingCycleAdapter
-  - [ ] SubscriptionCategoryAdapter
-  - [ ] WishlistItemAdapter
-  - [ ] PriorityAdapter
-- [ ] Register all TypeAdapters
-- [ ] Open Hive boxes for each entity
+## Phase 8: Data Layer Implementation (Flutter/Hive) (进行中)
+### 8.1 Hive Data Model Setup ✅
+- [x] Initialize Hive database in main.dart
+- [x] Create Hive TypeAdapters for all entities
+  - [x] ExpenseAdapter
+  - [x] ExpenseCategoryAdapter
+  - [x] CreditAccountAdapter
+  - [x] CreditAccountTypeAdapter
+  - [x] SubscriptionAdapter
+  - [x] BillingCycleAdapter
+  - [x] SubscriptionCategoryAdapter
+  - [x] WishlistItemAdapter
+  - [x] PriorityAdapter
+- [x] Register all TypeAdapters
+- [x] Open Hive boxes for each entity
 
 ### 8.2 Repository Implementations (Hive)
 - [ ] Create HiveExpenseRepository (implement ExpenseRepository)
