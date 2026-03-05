@@ -55,17 +55,17 @@
 
 ---
 
-## Phase 7: Domain Layer Implementation
-### 7.1 Core Entities
-- [ ] Create Expense entity (with estimatedUsageDays, dailyCost computed property)
-- [ ] Create ExpenseCategory enum
-- [ ] Create CreditAccount entity
-- [ ] Create CreditAccountType enum
-- [ ] Create Subscription entity (with dailyCost computed property)
-- [ ] Create BillingCycle enum
-- [ ] Create SubscriptionCategory enum
-- [ ] Create WishlistItem entity (with dailyCost computed property)
-- [ ] Create Priority enum
+## Phase 7: Domain Layer Implementation (进行中)
+### 7.1 Core Entities ✅
+- [x] Create Expense entity (with estimatedUsageDays, dailyCost computed property)
+- [x] Create ExpenseCategory enum
+- [x] Create CreditAccount entity
+- [x] Create CreditAccountType enum
+- [x] Create Subscription entity (with dailyCost computed property)
+- [x] Create BillingCycle enum
+- [x] Create SubscriptionCategory enum
+- [x] Create WishlistItem entity (with dailyCost computed property)
+- [x] Create Priority enum
 
 ### 7.2 Use Cases
 - [ ] Create AddExpenseUseCase
