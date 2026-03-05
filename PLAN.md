@@ -85,11 +85,11 @@
 - [x] Create AddCreditAccountUseCase
 - [x] Create CalculateCreditUtilizationUseCase
 - [x] Create AddSubscriptionUseCase
-- [ ] Create GetUpcomingObligationsUseCase
-- [ ] Create AddWishlistItemUseCase
+- [x] Create GetUpcomingObligationsUseCase
+- [x] Create AddWishlistItemUseCase
+- [x] Create CalculateAverageDailyCostUseCase
 - [ ] Create CheckAffordabilityUseCase
 - [ ] Create GenerateMonthlyReportUseCase
-- [ ] Create CalculateAverageDailyCostUseCase
 - [ ] Create CalculateDailyCostBreakdownUseCase
 - [ ] Create GenerateDailyCostTrendUseCase
 - [ ] Create CheckWishlistDailyCostImpactUseCase
