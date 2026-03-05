@@ -39,24 +39,35 @@
 ## Phase 6: Project Initialization & Setup (进行中)
 ### 6.1 Git Repository Setup ✅
 - [x] Initialize local git repository
-- [x] Create .gitignore file for iOS project
+- [x] Create .gitignore file for Flutter project
 - [x] Add remote origin: https://github.com/imK3/LifeCostTracker
 - [x] Initial commit with all planning documents
 - [x] Push to GitHub main branch
 
-### 6.2 Xcode Project Setup
-- [ ] Create new iOS project in Xcode (SwiftUI, iOS 16.0+)
-- [ ] Configure project settings (bundle identifier, team, deployment target)
+### 6.2 Flutter Project Setup
+- [ ] Create new Flutter project (`flutter create life_cost_tracker`)
+- [ ] Configure project settings (app name, bundle identifier, deployment targets)
 - [ ] Set up Clean Architecture folder structure
-- [ ] Add Swift Package Manager dependencies (SDWebImageSwiftUI, Charts, SwiftDate, KeychainAccess)
-- [ ] Configure Core Data model container
-- [ ] Set up Firebase Crashlytics (optional)
-- [ ] Set up Firebase Analytics (optional)
+- [ ] Add pubspec.yaml dependencies (provider, hive, flutter_secure_storage, dio, cached_network_image, fl_chart, intl, etc.)
+- [ ] Initialize Hive database
+- [ ] Set up Firebase Crashlytics (optional, cross-platform)
+- [ ] Set up Firebase Analytics (optional, cross-platform)
 
 ---
 
 ## Phase 7: Domain Layer Implementation (进行中)
-### 7.1 Core Entities ✅
+### 7.1 Core Entities (Swift version deprecated, switching to Flutter/Dart)
+- [x] Create Expense entity (Swift version, deprecated)
+- [x] Create ExpenseCategory enum (Swift version, deprecated)
+- [x] Create CreditAccount entity (Swift version, deprecated)
+- [x] Create CreditAccountType enum (Swift version, deprecated)
+- [x] Create Subscription entity (Swift version, deprecated)
+- [x] Create BillingCycle enum (Swift version, deprecated)
+- [x] Create SubscriptionCategory enum (Swift version, deprecated)
+- [x] Create WishlistItem entity (Swift version, deprecated)
+- [x] Create Priority enum (Swift version, deprecated)
+
+### 7.1 Core Entities (Flutter/Dart version) ✅
 - [x] Create Expense entity (with estimatedUsageDays, dailyCost computed property)
 - [x] Create ExpenseCategory enum
 - [x] Create CreditAccount entity
