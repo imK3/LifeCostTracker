@@ -1,15 +1,38 @@
 // expense_category.dart
 // LifeCostTracker
 // Created by LifeCostTracker Team
+// 支出分类
+// Expense category
 
+/// Expense category enum
+/// 支出分类枚举
 enum ExpenseCategory {
+  /// Food and dining
+  /// 餐饮
   food,
+
+  /// Transportation
+  /// 交通
   transport,
+
+  /// Shopping
+  /// 购物
   shopping,
+
+  /// Entertainment
+  /// 娱乐
   entertainment,
+
+  /// Utilities and bills
+  /// 生活缴费
   utilities,
+
+  /// Other categories
+  /// 其他
   other;
 
+  /// Display name for the category in Chinese
+  /// 分类的中文显示名称
   String get displayName {
     switch (this) {
       case ExpenseCategory.food:
@@ -27,6 +50,8 @@ enum ExpenseCategory {
     }
   }
 
+  /// System icon name for the category
+  /// 分类的系统图标名称
   String get systemIconName {
     switch (this) {
       case ExpenseCategory.food:
