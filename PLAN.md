@@ -78,7 +78,7 @@
 - [x] Create WishlistItem entity (with dailyCost computed property)
 - [x] Create Priority enum
 
-### 7.2 Use Cases (进行中)
+### 7.2 Use Cases ✅
 - [x] Create BaseUseCase
 - [x] Create AddExpenseUseCase
 - [x] Create GetExpensesUseCase
@@ -92,9 +92,9 @@
 - [x] Create CalculateDailyCostBreakdownUseCase
 - [x] Create CheckWishlistDailyCostImpactUseCase
 - [x] Create CalculateWishlistDailySavingsTargetUseCase
-- [ ] Create GenerateMonthlyReportUseCase
-- [ ] Create GenerateDailyCostTrendUseCase
-- [ ] Create CompareWishlistDailyCostsUseCase
+- [x] Create GenerateMonthlyReportUseCase
+- [x] Create GenerateDailyCostTrendUseCase
+- [x] Create CompareWishlistDailyCostsUseCase
 
 ### 7.3 Repository Interfaces ✅
 - [x] Create ExpenseRepository protocol
@@ -104,32 +104,38 @@
 
 ---
 
-## Phase 8: Data Layer Implementation
-### 8.1 Core Data Model
-- [ ] Create Expense Core Data entity
-- [ ] Create CreditAccount Core Data entity
-- [ ] Create Subscription Core Data entity
-- [ ] Create WishlistItem Core Data entity
-- [ ] Create Value Transformers for Decimal, Date, etc.
-- [ ] Set up Core Data model relationships
-- [ ] Configure NSPersistentCloudKitContainer (optional, for iCloud sync)
+## Phase 8: Data Layer Implementation (Flutter/Hive)
+### 8.1 Hive Data Model Setup
+- [ ] Initialize Hive database in main.dart
+- [ ] Create Hive TypeAdapters for all entities
+  - [ ] ExpenseAdapter
+  - [ ] ExpenseCategoryAdapter
+  - [ ] CreditAccountAdapter
+  - [ ] CreditAccountTypeAdapter
+  - [ ] SubscriptionAdapter
+  - [ ] BillingCycleAdapter
+  - [ ] SubscriptionCategoryAdapter
+  - [ ] WishlistItemAdapter
+  - [ ] PriorityAdapter
+- [ ] Register all TypeAdapters
+- [ ] Open Hive boxes for each entity
 
-### 8.2 Repository Implementations
-- [ ] Create CoreDataExpenseRepository (implement ExpenseRepository)
-- [ ] Create CoreDataCreditAccountRepository (implement CreditAccountRepository)
-- [ ] Create CoreDataSubscriptionRepository (implement SubscriptionRepository)
-- [ ] Create CoreDataWishlistItemRepository (implement WishlistItemRepository)
+### 8.2 Repository Implementations (Hive)
+- [ ] Create HiveExpenseRepository (implement ExpenseRepository)
+- [ ] Create HiveCreditAccountRepository (implement CreditAccountRepository)
+- [ ] Create HiveSubscriptionRepository (implement SubscriptionRepository)
+- [ ] Create HiveWishlistItemRepository (implement WishlistItemRepository)
 
 ### 8.3 Plaid Integration (Premium Feature)
-- [ ] Create Plaid API client
+- [ ] Create Plaid API client (Dio)
 - [ ] Implement /link/token/create endpoint
 - [ ] Implement /transactions/sync endpoint
 - [ ] Implement /accounts/get endpoint
-- [ ] Create PlaidAccessToken storage in Keychain
+- [ ] Create PlaidAccessToken storage in flutter_secure_storage
 - [ ] Create transaction sync use case
 
-### 8.4 Keychain Integration
-- [ ] Create Keychain helper class
+### 8.4 Secure Storage Integration
+- [ ] Create SecureStorage helper class (wrapping flutter_secure_storage)
 - [ ] Implement secure storage for Plaid tokens
 - [ ] Implement secure storage for authentication tokens
 
