@@ -36,13 +36,13 @@
 
 ---
 
-## Phase 6: Project Initialization & Setup (开始)
-### 6.1 Git Repository Setup
-- [ ] Initialize local git repository
-- [ ] Create .gitignore file for iOS project
-- [ ] Add remote origin: https://github.com/imK3/LifeCostTracker
-- [ ] Initial commit with all planning documents
-- [ ] Push to GitHub main branch
+## Phase 6: Project Initialization & Setup (进行中)
+### 6.1 Git Repository Setup ✅
+- [x] Initialize local git repository
+- [x] Create .gitignore file for iOS project
+- [x] Add remote origin: https://github.com/imK3/LifeCostTracker
+- [x] Initial commit with all planning documents
+- [x] Push to GitHub main branch
 
 ### 6.2 Xcode Project Setup
 - [ ] Create new iOS project in Xcode (SwiftUI, iOS 16.0+)
