@@ -120,11 +120,11 @@
 - [x] Register all TypeAdapters
 - [x] Open Hive boxes for each entity
 
-### 8.2 Repository Implementations (Hive)
-- [ ] Create HiveExpenseRepository (implement ExpenseRepository)
-- [ ] Create HiveCreditAccountRepository (implement CreditAccountRepository)
-- [ ] Create HiveSubscriptionRepository (implement SubscriptionRepository)
-- [ ] Create HiveWishlistItemRepository (implement WishlistItemRepository)
+### 8.2 Repository Implementations (Hive) ✅
+- [x] Create HiveExpenseRepository (implement ExpenseRepository)
+- [x] Create HiveCreditAccountRepository (implement CreditAccountRepository)
+- [x] Create HiveSubscriptionRepository (implement SubscriptionRepository)
+- [x] Create HiveWishlistItemRepository (implement WishlistItemRepository)
 
 ### 8.3 Plaid Integration (Premium Feature)
 - [ ] Create Plaid API client (Dio)
@@ -302,8 +302,8 @@
 ## Progress Tracking
 - **Last Updated**: 2026-03-05
 - **Total Tasks**: ~150
-- **Completed Tasks**: 18 (Phase 1-5)
-- **Current Phase**: Phase 6: Project Initialization & Setup
+- **Completed Tasks**: 100+ (Phase 1-8)
+- **Current Phase**: Phase 8: Data Layer Implementation (Phase 8.1-8.2 完成)
 
 ---
 
