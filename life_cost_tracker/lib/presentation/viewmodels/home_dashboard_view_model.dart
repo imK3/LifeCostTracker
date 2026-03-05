@@ -13,6 +13,7 @@ import '../../domain/usecases/calculate_average_daily_cost_usecase.dart';
 import '../../domain/usecases/get_upcoming_obligations_usecase.dart';
 import '../../domain/usecases/calculate_credit_utilization_usecase.dart';
 import '../../domain/usecases/calculate_daily_cost_breakdown_usecase.dart';
+import '../../domain/usecases/base_usecase.dart';
 
 /// Home Dashboard ViewModel - manages home dashboard state
 /// 首页仪表板 ViewModel - 管理首页仪表板的状态
