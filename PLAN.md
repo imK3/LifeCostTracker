@@ -78,12 +78,13 @@
 - [x] Create WishlistItem entity (with dailyCost computed property)
 - [x] Create Priority enum
 
-### 7.2 Use Cases
-- [ ] Create AddExpenseUseCase
-- [ ] Create GetExpensesUseCase
-- [ ] Create AddCreditAccountUseCase
-- [ ] Create CalculateCreditUtilizationUseCase
-- [ ] Create AddSubscriptionUseCase
+### 7.2 Use Cases (进行中)
+- [x] Create BaseUseCase
+- [x] Create AddExpenseUseCase
+- [x] Create GetExpensesUseCase
+- [x] Create AddCreditAccountUseCase
+- [x] Create CalculateCreditUtilizationUseCase
+- [x] Create AddSubscriptionUseCase
 - [ ] Create GetUpcomingObligationsUseCase
 - [ ] Create AddWishlistItemUseCase
 - [ ] Create CheckAffordabilityUseCase
@@ -95,11 +96,11 @@
 - [ ] Create CompareWishlistDailyCostsUseCase
 - [ ] Create CalculateWishlistDailySavingsTargetUseCase
 
-### 7.3 Repository Interfaces
-- [ ] Create ExpenseRepository protocol
-- [ ] Create CreditAccountRepository protocol
-- [ ] Create SubscriptionRepository protocol
-- [ ] Create WishlistItemRepository protocol
+### 7.3 Repository Interfaces ✅
+- [x] Create ExpenseRepository protocol
+- [x] Create CreditAccountRepository protocol
+- [x] Create SubscriptionRepository protocol
+- [x] Create WishlistItemRepository protocol
 
 ---
 
