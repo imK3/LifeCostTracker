@@ -141,44 +141,44 @@
 
 ---
 
-## Phase 9: Presentation Layer - ViewModels
-### 9.1 Home Dashboard ViewModel
-- [ ] Create HomeDashboardViewModel
-- [ ] Implement @Published properties for monthlySummary
-- [ ] Implement @Published properties for upcomingObligations
-- [ ] Implement @Published properties for creditHealthSnapshot
-- [ ] Implement @Published properties for averageDailyCost
-- [ ] Implement @Published properties for dailyCostBreakdown
-- [ ] Implement data loading methods
-- [ ] Implement dependency injection for use cases
+## Phase 9: Presentation Layer - ViewModels ✅
+### 9.1 Home Dashboard ViewModel ✅
+- [x] Create HomeDashboardViewModel
+- [x] Implement @Published properties for monthlySummary
+- [x] Implement @Published properties for upcomingObligations
+- [x] Implement @Published properties for creditHealthSnapshot
+- [x] Implement @Published properties for averageDailyCost
+- [x] Implement @Published properties for dailyCostBreakdown
+- [x] Implement data loading methods
+- [x] Implement dependency injection for use cases
 
-### 9.2 All Items List ViewModel
-- [ ] Create AllItemsListViewModel
-- [ ] Implement @Published properties for items array
-- [ ] Implement sorting logic (按性价比 / 按日耗 / 按分类)
-- [ ] Implement filter logic (实物 / 订阅 / 云服务/工具 / 等)
-- [ ] Implement 性价比 tier grouping
+### 9.2 All Items List ViewModel ✅
+- [x] Create AllItemsListViewModel
+- [x] Implement @Published properties for items array
+- [x] Implement sorting logic (按性价比 / 按日耗 / 按分类)
+- [x] Implement filter logic (实物 / 订阅 / 云服务/工具 / 等)
+- [x] Implement 性价比 tier grouping
 
-### 9.3 Add New Item ViewModel
-- [ ] Create AddNewItemViewModel
-- [ ] Implement ownership question logic (愿望清单 vs 已经买了)
-- [ ] Implement usage days input with presets
-- [ ] Implement real-time daily cost preview
-- [ ] Implement category selection
-- [ ] Implement validation logic
-- [ ] Implement save method
+### 9.3 Add New Item ViewModel ✅
+- [x] Create AddNewItemViewModel
+- [x] Implement ownership question logic (愿望清单 vs 已经买了)
+- [x] Implement usage days input with presets
+- [x] Implement real-time daily cost preview
+- [x] Implement category selection
+- [x] Implement validation logic
+- [x] Implement save method
 
-### 9.4 Item Detail ViewModel
-- [ ] Create ItemDetailViewModel
-- [ ] Implement item details display
-- [ ] Implement daily cost trend chart data
-- [ ] Implement edit functionality
-- [ ] Implement delete functionality
-- [ ] Implement mark as sold/gone functionality
+### 9.4 Item Detail ViewModel ✅
+- [x] Create ItemDetailViewModel
+- [x] Implement item details display
+- [x] Implement daily cost trend chart data
+- [x] Implement edit functionality
+- [x] Implement delete functionality
+- [x] Implement mark as sold/gone functionality
 
-### 9.5 Other ViewModels
-- [ ] Create ReportsViewModel
-- [ ] Create SettingsViewModel
+### 9.5 Other ViewModels ✅
+- [x] Create ReportsViewModel
+- [x] Create SettingsViewModel
 
 ---
 
@@ -302,8 +302,9 @@
 ## Progress Tracking
 - **Last Updated**: 2026-03-05
 - **Total Tasks**: ~150
-- **Completed Tasks**: 100+ (Phase 1-8)
-- **Current Phase**: Phase 8: Data Layer Implementation (Phase 8.1-8.2 完成)
+- **Completed Tasks**: 120+ (Phase 1-9)
+- **Current Phase**: Phase 9: Presentation Layer - ViewModels (100% 完成)
+- **Next Phase**: Phase 10: Presentation Layer - Views
 
 ---
 
