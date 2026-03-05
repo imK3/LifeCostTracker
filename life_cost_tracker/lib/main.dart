@@ -12,6 +12,16 @@ import 'data/adapters/subscription_category_adapter.dart';
 import 'data/adapters/wishlist_item_adapter.dart';
 import 'data/adapters/priority_adapter.dart';
 
+import 'data/repositories/hive_expense_repository.dart';
+import 'data/repositories/hive_credit_account_repository.dart';
+import 'data/repositories/hive_subscription_repository.dart';
+import 'data/repositories/hive_wishlist_item_repository.dart';
+
+import 'domain/entities/expense.dart';
+import 'domain/entities/credit_account.dart';
+import 'domain/entities/subscription.dart';
+import 'domain/entities/wishlist_item.dart';
+
 void main() async {
   // Initialize Hive
   // 初始化 Hive
@@ -32,12 +42,29 @@ void main() async {
 
   // Open Hive boxes
   // 打开 Hive boxes
-  await Hive.openBox('expenses');
-  await Hive.openBox('credit_accounts');
-  await Hive.openBox('subscriptions');
-  await Hive.openBox('wishlist_items');
+  final expenseBox = await Hive.openBox<Expense>('expenses');
+  final creditAccountBox = await Hive.openBox<CreditAccount>('credit_accounts');
+  final subscriptionBox = await Hive.openBox<Subscription>('subscriptions');
+  final wishlistItemBox = await Hive.openBox<WishlistItem>('wishlist_items');
 
-  runApp(const MyApp());
+  // Create repository instances
+  // 创建仓库实例
+  final expenseRepository = HiveExpenseRepository(expenseBox);
+  final creditAccountRepository = HiveCreditAccountRepository(creditAccountBox);
+  final subscriptionRepository = HiveSubscriptionRepository(subscriptionBox);
+  final wishlistItemRepository = HiveWishlistItemRepository(wishlistItemBox);
+
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider.value(value: expenseRepository),
+        Provider.value(value: creditAccountRepository),
+        Provider.value(value: subscriptionRepository),
+        Provider.value(value: wishlistItemRepository),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
