@@ -6,11 +6,19 @@ import '../entities/credit_account.dart';
 import '../repositories/credit_account_repository.dart';
 import 'base_usecase.dart';
 
+/// Calculate credit utilization use case
+/// 计算信用利用率用例
 class CalculateCreditUtilizationUseCase implements BaseUseCase<double?, NoParams> {
+  /// Credit account repository
+  /// 信用账户仓库
   final CreditAccountRepository repository;
 
+  /// Constructor
+  /// 构造函数
   CalculateCreditUtilizationUseCase(this.repository);
 
+  /// Execute the use case to calculate overall credit utilization
+  /// 执行用例以计算整体信用利用率
   @override
   Future<double?> call(NoParams params) async {
     final accounts = await repository.getCreditAccounts();
