@@ -256,7 +256,7 @@
 - [x] Write unit tests for Expense entity
 - [x] Write unit tests for CreditAccount entity
 - [x] Write unit tests for Subscription entity
-- [ ] Write unit tests for WishlistItem entity
+- [x] Write unit tests for WishlistItem entity
 - [ ] Write unit tests for Use Cases
 - [ ] Write unit tests for ViewModels (80% coverage target)
 - [ ] Write unit tests for Repository implementations
