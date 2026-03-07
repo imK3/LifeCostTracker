@@ -98,11 +98,8 @@ class _ItemDetailViewState extends State<ItemDetailView> {
               IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () {
-                  // TODO: Navigate to edit screen
-                  // TODO：导航到编辑屏幕
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('编辑功能即将到来')),
-                  );
+                  vm.startEditing();
+                  _showEditSheet(context, vm, item);
                 },
               ),
             ],
@@ -478,3 +475,116 @@ class StatItem {
     required this.value,
   });
 }
+
+  /// Show edit sheet
+  /// 显示编辑表单
+  void _showEditSheet(BuildContext context, ItemDetailViewModel vm, dynamic item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '编辑物品',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Name field
+              TextFormField(
+                initialValue: vm.editData['name']?.toString() ?? '',
+                decoration: const InputDecoration(
+                  labelText: '名称',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) => vm.updateEditField('name', value),
+              ),
+              const SizedBox(height: 16),
+              
+              // Cost/Amount field
+              TextFormField(
+                initialValue: (vm.editData['amount'] ?? vm.editData['cost'] ?? vm.editData['totalCost'])?.toString() ?? '',
+                decoration: const InputDecoration(
+                  labelText: '金额',
+                  border: OutlineInputBorder(),
+                  prefixText: '¥',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (value) {
+                  final parsed = double.tryParse(value);
+                  if (parsed != null) {
+                    if (vm.editData.containsKey('amount')) {
+                      vm.updateEditField('amount', parsed);
+                    } else if (vm.editData.containsKey('cost')) {
+                      vm.updateEditField('cost', parsed);
+                    } else if (vm.editData.containsKey('totalCost')) {
+                      vm.updateEditField('totalCost', parsed);
+                    }
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              
+              // Usage Days field (if applicable)
+              if (vm.editData.containsKey('estimatedUsageDays')) ...[
+                TextFormField(
+                  initialValue: vm.editData['estimatedUsageDays']?.toString() ?? '',
+                  decoration: const InputDecoration(
+                    labelText: '预计使用天数',
+                    border: OutlineInputBorder(),
+                    suffixText: '天',
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
+                    final parsed = int.tryParse(value);
+                    if (parsed != null) {
+                      vm.updateEditField('estimatedUsageDays', parsed);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+              
+              // Action buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      vm.cancelEditing();
+                      Navigator.pop(context);
+                    },
+                    child: const Text('取消'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      vm.saveEdits();
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('已保存更改')),
+                      );
+                    },
+                    child: const Text('保存'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
