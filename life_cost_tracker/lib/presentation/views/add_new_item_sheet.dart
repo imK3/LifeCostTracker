@@ -19,24 +19,25 @@ class AddNewItemSheet extends StatefulWidget {
 
 class _AddNewItemSheetState extends State<AddNewItemSheet> {
   int _currentStep = 0;
-  
+
   // Step 1: Ownership
   // 第 1 步：所有权
   bool? _isOwned;
-  
+
   // Step 2: Usage Days
   // 第 2 步：使用天数
   final TextEditingController _daysUsedController = TextEditingController();
   final _formKey2 = GlobalKey<FormState>();
-  
+
   // Step 3: Item Details
   // 第 3 步：物品详情
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _linkController = TextEditingController();
   String? _selectedCategory;
   final _formKey3 = GlobalKey<FormState>();
-  
+
   final List<String> _categories = [
     '实物',
     '订阅',
@@ -52,6 +53,7 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
     _nameController.dispose();
     _priceController.dispose();
     _descriptionController.dispose();
+    _linkController.dispose();
     super.dispose();
   }
 
@@ -80,7 +82,7 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
+
               // Title
               // 标题
               Padding(
@@ -89,9 +91,10 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
                   children: [
                     Text(
                       '添加新物品',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                     const Spacer(),
                     IconButton(
@@ -101,13 +104,13 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
                   ],
                 ),
               ),
-              
+
               const Divider(height: 1),
-              
+
               // Step progress
               // 步骤进度
               _buildStepIndicator(),
-              
+
               // Step content
               // 步骤内容
               Expanded(
@@ -130,7 +133,7 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
         children: List.generate(3, (index) {
           final isActive = index == _currentStep;
           final isCompleted = index < _currentStep;
-          
+
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -142,7 +145,10 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
                   color: isActive
                       ? Theme.of(context).colorScheme.primary
                       : isCompleted
-                          ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
+                          ? Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.5)
                           : Theme.of(context).dividerColor,
                 ),
                 child: Center(
@@ -248,7 +254,7 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
   /// 第 2 步：使用天数
   Widget _buildStep2() {
     final isOwned = _isOwned ?? false;
-    
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Form(
@@ -265,10 +271,10 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
             TextFormField(
               controller: _daysUsedController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: isOwned ? '使用天数' : '预计使用天数',
                 hintText: '输入天数',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -286,8 +292,7 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
               spacing: 12,
               runSpacing: 12,
               children: [
-                if (isOwned)
-                  _buildPresetButton('今天刚买', '1'),
+                if (isOwned) _buildPresetButton('今天刚买', '1'),
                 _buildPresetButton('1年', '365'),
                 _buildPresetButton('2年', '730'),
                 _buildPresetButton('永久', '9999'),
@@ -340,7 +345,7 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
     final days = int.tryParse(_daysUsedController.text) ?? 0;
     final price = double.tryParse(_priceController.text) ?? 0.0;
     final dailyCost = days > 0 ? price / days : 0.0;
-    
+
     return Column(
       children: [
         Expanded(
@@ -375,12 +380,13 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
                     }).toList(),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Price input
                   // 价格输入
                   TextFormField(
                     controller: _priceController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(
                       labelText: '价格',
                       hintText: '输入价格',
@@ -399,7 +405,7 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
                     },
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Name input
                   // 名称输入
                   TextFormField(
@@ -417,7 +423,7 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
                     },
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Description input (optional)
                   // 描述输入（可选）
                   TextFormField(
@@ -429,12 +435,25 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
                       border: OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 20),
+
+                  // Link input (optional)
+                  // 链接输入（可选）
+                  TextFormField(
+                    controller: _linkController,
+                    decoration: const InputDecoration(
+                      labelText: '链接（可选）',
+                      hintText: '输入购买链接或相关网址',
+                      prefixIcon: Icon(Icons.link),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ),
-        
+
         // Real-time preview box
         // 实时预览框
         Container(
@@ -460,16 +479,17 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
                     ),
                     Text(
                       '¥${dailyCost.toStringAsFixed(2)}/天',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: dailyCost > 0
-                                ? (dailyCost < 10
-                                    ? Colors.green
-                                    : dailyCost < 30
-                                        ? Colors.orange
-                                        : Colors.red)
-                                : Colors.grey,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: dailyCost > 0
+                                    ? (dailyCost < 10
+                                        ? Colors.green
+                                        : dailyCost < 30
+                                            ? Colors.orange
+                                            : Colors.red)
+                                    : Colors.grey,
+                              ),
                     ),
                   ],
                 ),
@@ -497,15 +517,15 @@ class _AddNewItemSheetState extends State<AddNewItemSheet> {
     if (!(_formKey3.currentState?.validate() ?? false)) {
       return;
     }
-    
+
     final vm = context.read<AddNewItemViewModel>();
     // TODO: Implement save logic in ViewModel
     // TODO：在 ViewModel 中实现保存逻辑
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('保存成功！')),
     );
-    
+
     Navigator.pop(context);
   }
 }

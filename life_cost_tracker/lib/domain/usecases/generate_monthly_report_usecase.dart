@@ -44,7 +44,9 @@ class MonthlyReport {
   /// Average daily cost
   /// 平均每日成本
   double? get averageDailyCost {
-    final days = DateTime(year, month + 1, 0).difference(DateTime(year, month, 1)).inDays;
+    final days = DateTime(year, month + 1, 0)
+        .difference(DateTime(year, month, 1))
+        .inDays;
     if (days <= 0) return null;
     return totalSpending / days;
   }
@@ -88,8 +90,9 @@ class GenerateMonthlyReportUseCase
     // Get all expenses and filter by month
     // 获取所有支出并按月过滤
     final expenses = await expenseRepository.getExpenses();
-    final monthExpenses = expenses.where((e) =>
-        e.date.month == month && e.date.year == year).toList();
+    final monthExpenses = expenses
+        .where((e) => e.date.month == month && e.date.year == year)
+        .toList();
 
     // Get all subscriptions
     // 获取所有订阅

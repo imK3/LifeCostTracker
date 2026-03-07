@@ -2,8 +2,6 @@
 // LifeCostTracker
 // Created by LifeCostTracker Team
 
-import '../entities/credit_account.dart';
-import '../entities/subscription.dart';
 import '../repositories/credit_account_repository.dart';
 import '../repositories/subscription_repository.dart';
 import 'base_usecase.dart';
@@ -81,8 +79,7 @@ class GetUpcomingObligationsUseCase
     // 获取即将到期的信用卡还款
     final creditAccounts = await creditAccountRepository.getCreditAccounts();
     for (final account in creditAccounts) {
-      if (account.dueDate != null &&
-          account.dueDate!.isAfter(DateTime.now())) {
+      if (account.dueDate != null && account.dueDate!.isAfter(DateTime.now())) {
         obligations.add(
           Obligation(
             id: account.id,

@@ -12,7 +12,8 @@ import 'base_usecase.dart';
 
 /// Calculate average daily cost use case
 /// 计算平均每日成本用例
-class CalculateAverageDailyCostUseCase implements BaseUseCase<double?, NoParams> {
+class CalculateAverageDailyCostUseCase
+    implements BaseUseCase<double?, NoParams> {
   /// Expense repository
   /// 支出仓库
   final ExpenseRepository expenseRepository;

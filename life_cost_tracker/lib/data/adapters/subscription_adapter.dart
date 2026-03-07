@@ -17,16 +17,25 @@ class SubscriptionAdapter extends TypeAdapter<Subscription> {
 
   @override
   Subscription read(BinaryReader reader) {
+    final id = reader.readString();
+    final name = reader.readString();
+    final cost = reader.readDouble();
+    final billingCycle = BillingCycle.values[reader.readInt()];
+    final nextBillingDate = DateTime.parse(reader.readString());
+    final category = SubscriptionCategory.values[reader.readInt()];
+    final isFreeTrial = reader.readBool();
+    final freeTrialEndDateStr = reader.readString();
+
     return Subscription(
-      id: reader.readString(),
-      name: reader.readString(),
-      cost: reader.readDouble(),
-      billingCycle: BillingCycle.values[reader.readInt()],
-      nextBillingDate: DateTime.parse(reader.readString()),
-      category: SubscriptionCategory.values[reader.readInt()],
-      isFreeTrial: reader.readBool(),
-      freeTrialEndDate: reader.readString()?.isNotEmpty == true
-          ? DateTime.parse(reader.readString())
+      id: id,
+      name: name,
+      cost: cost,
+      billingCycle: billingCycle,
+      nextBillingDate: nextBillingDate,
+      category: category,
+      isFreeTrial: isFreeTrial,
+      freeTrialEndDate: freeTrialEndDateStr.isNotEmpty
+          ? DateTime.parse(freeTrialEndDateStr)
           : null,
     );
   }

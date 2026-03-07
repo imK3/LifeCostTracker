@@ -16,26 +16,31 @@ class WishlistItemAdapter extends TypeAdapter<WishlistItem> {
 
   @override
   WishlistItem read(BinaryReader reader) {
+    final id = reader.readString();
+    final name = reader.readString();
+    final descriptionStr = reader.readString();
+    final targetDateStr = reader.readString();
+    final totalCost = reader.readDouble();
+    final estimatedUsageDays = reader.readInt();
+    final priority = Priority.values[reader.readInt()];
+    final photoUrlStr = reader.readString();
+    final linkUrlStr = reader.readString();
+    final isOwned = reader.readBool();
+    final actualUsageDays = reader.readInt();
+
     return WishlistItem(
-      id: reader.readString(),
-      name: reader.readString(),
-      description: reader.readString()?.isNotEmpty == true
-          ? reader.readString()
-          : null,
-      targetDate: reader.readString()?.isNotEmpty == true
-          ? DateTime.parse(reader.readString())
-          : null,
-      totalCost: reader.readDouble(),
-      estimatedUsageDays: reader.readInt(),
-      priority: Priority.values[reader.readInt()],
-      photoUrl: reader.readString()?.isNotEmpty == true
-          ? reader.readString()
-          : null,
-      linkUrl: reader.readString()?.isNotEmpty == true
-          ? reader.readString()
-          : null,
-      isOwned: reader.readBool(),
-      actualUsageDays: reader.readInt(),
+      id: id,
+      name: name,
+      description: descriptionStr.isNotEmpty ? descriptionStr : null,
+      targetDate:
+          targetDateStr.isNotEmpty ? DateTime.parse(targetDateStr) : null,
+      totalCost: totalCost,
+      estimatedUsageDays: estimatedUsageDays > 0 ? estimatedUsageDays : null,
+      priority: priority,
+      photoUrl: photoUrlStr.isNotEmpty ? photoUrlStr : null,
+      linkUrl: linkUrlStr.isNotEmpty ? linkUrlStr : null,
+      isOwned: isOwned,
+      actualUsageDays: actualUsageDays > 0 ? actualUsageDays : null,
     );
   }
 

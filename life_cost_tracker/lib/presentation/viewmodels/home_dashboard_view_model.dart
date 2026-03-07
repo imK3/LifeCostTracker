@@ -5,7 +5,6 @@
 // Home Dashboard ViewModel
 
 import 'package:flutter/foundation.dart';
-import 'package:provider/provider.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../domain/repositories/subscription_repository.dart';
 import '../../domain/repositories/credit_account_repository.dart';
@@ -18,18 +17,6 @@ import '../../domain/usecases/base_usecase.dart';
 /// Home Dashboard ViewModel - manages home dashboard state
 /// 首页仪表板 ViewModel - 管理首页仪表板的状态
 class HomeDashboardViewModel extends ChangeNotifier {
-  /// Expense repository
-  /// 支出仓库
-  final ExpenseRepository _expenseRepository;
-
-  /// Subscription repository
-  /// 订阅仓库
-  final SubscriptionRepository _subscriptionRepository;
-
-  /// Credit account repository
-  /// 信用账户仓库
-  final CreditAccountRepository _creditAccountRepository;
-
   /// Calculate average daily cost use case
   /// 计算平均每日成本用例
   final CalculateAverageDailyCostUseCase _calculateAverageDailyCostUseCase;
@@ -77,20 +64,17 @@ class HomeDashboardViewModel extends ChangeNotifier {
   /// Constructor
   /// 构造函数
   HomeDashboardViewModel({
-    required ExpenseRepository expenseRepository,
-    required SubscriptionRepository subscriptionRepository,
-    required CreditAccountRepository creditAccountRepository,
     required CalculateAverageDailyCostUseCase calculateAverageDailyCostUseCase,
     required GetUpcomingObligationsUseCase getUpcomingObligationsUseCase,
-    required CalculateCreditUtilizationUseCase calculateCreditUtilizationUseCase,
-    required CalculateDailyCostBreakdownUseCase calculateDailyCostBreakdownUseCase,
-  })  : _expenseRepository = expenseRepository,
-        _subscriptionRepository = subscriptionRepository,
-        _creditAccountRepository = creditAccountRepository,
-        _calculateAverageDailyCostUseCase = calculateAverageDailyCostUseCase,
+    required CalculateCreditUtilizationUseCase
+        calculateCreditUtilizationUseCase,
+    required CalculateDailyCostBreakdownUseCase
+        calculateDailyCostBreakdownUseCase,
+  })  : _calculateAverageDailyCostUseCase = calculateAverageDailyCostUseCase,
         _getUpcomingObligationsUseCase = getUpcomingObligationsUseCase,
         _calculateCreditUtilizationUseCase = calculateCreditUtilizationUseCase,
-        _calculateDailyCostBreakdownUseCase = calculateDailyCostBreakdownUseCase;
+        _calculateDailyCostBreakdownUseCase =
+            calculateDailyCostBreakdownUseCase;
 
   /// Get monthly summary
   /// 获取月度汇总
@@ -159,7 +143,8 @@ class HomeDashboardViewModel extends ChangeNotifier {
   /// Load credit health snapshot
   /// 加载信用健康快照
   Future<void> _loadCreditHealthSnapshot() async {
-    _creditHealthSnapshot = await _calculateCreditUtilizationUseCase(NoParams());
+    _creditHealthSnapshot =
+        await _calculateCreditUtilizationUseCase(NoParams());
   }
 
   /// Load daily cost breakdown

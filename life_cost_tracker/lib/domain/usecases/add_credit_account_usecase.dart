@@ -11,16 +11,16 @@ import 'base_usecase.dart';
 class AddCreditAccountUseCase implements BaseUseCase<void, CreditAccount> {
   /// Credit account repository
   /// 信用账户仓库
-  final CreditAccountRepository repository;
+  final CreditAccountRepository creditAccountRepository;
 
   /// Constructor
   /// 构造函数
-  AddCreditAccountUseCase(this.repository);
+  AddCreditAccountUseCase({required this.creditAccountRepository});
 
   /// Execute use case
   /// 执行用例
   @override
   Future<void> call(CreditAccount account) async {
-    await repository.addCreditAccount(account);
+    await creditAccountRepository.addCreditAccount(account);
   }
 }

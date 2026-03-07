@@ -11,16 +11,16 @@ import 'base_usecase.dart';
 class AddExpenseUseCase implements BaseUseCase<void, Expense> {
   /// Expense repository
   /// 支出仓库
-  final ExpenseRepository repository;
+  final ExpenseRepository expenseRepository;
 
   /// Constructor
   /// 构造函数
-  AddExpenseUseCase(this.repository);
+  AddExpenseUseCase({required this.expenseRepository});
 
   /// Execute the use case
   /// 执行用例
   @override
   Future<void> call(Expense expense) async {
-    await repository.addExpense(expense);
+    await expenseRepository.addExpense(expense);
   }
 }

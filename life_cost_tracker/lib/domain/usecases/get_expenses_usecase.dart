@@ -11,16 +11,16 @@ import 'base_usecase.dart';
 class GetExpensesUseCase implements BaseUseCase<List<Expense>, NoParams> {
   /// Expense repository
   /// 支出仓库
-  final ExpenseRepository repository;
+  final ExpenseRepository expenseRepository;
 
   /// Constructor
   /// 构造函数
-  GetExpensesUseCase(this.repository);
+  GetExpensesUseCase({required this.expenseRepository});
 
   /// Execute the use case
   /// 执行用例
   @override
   Future<List<Expense>> call(NoParams params) async {
-    return await repository.getExpenses();
+    return await expenseRepository.getExpenses();
   }
 }

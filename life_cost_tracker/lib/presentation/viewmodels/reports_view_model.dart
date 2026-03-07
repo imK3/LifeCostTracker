@@ -70,7 +70,8 @@ class ReportsViewModel extends ChangeNotifier {
   /// Set selected month
   /// 设置选中的月份
   void setSelectedMonth(DateTime month) {
-    if (_selectedMonth.month != month.month || _selectedMonth.year != month.year) {
+    if (_selectedMonth.month != month.month ||
+        _selectedMonth.year != month.year) {
       _selectedMonth = month;
       loadMonthlyReport();
       notifyListeners();

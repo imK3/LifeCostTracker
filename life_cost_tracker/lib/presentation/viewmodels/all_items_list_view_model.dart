@@ -177,6 +177,19 @@ class AllItemsListViewModel extends ChangeNotifier {
   /// 获取显示物品
   List<DisplayItem> get displayItems => _displayItems;
 
+  /// Get items grouped by cost-effectiveness tier
+  /// 获取按性价比等级分组的物品
+  Map<CostEffectivenessTier, List<DisplayItem>> get groupedByTier {
+    final Map<CostEffectivenessTier, List<DisplayItem>> groups = {};
+    for (final tier in CostEffectivenessTier.values) {
+      groups[tier] = [];
+    }
+    for (final item in _displayItems) {
+      groups[item.tier]?.add(item);
+    }
+    return groups;
+  }
+
   /// Get sort option
   /// 获取排序选项
   ItemSortOption get sortOption => _sortOption;
@@ -287,13 +300,17 @@ class AllItemsListViewModel extends ChangeNotifier {
         filtered = List.from(_allItems);
         break;
       case ItemFilterOption.physical:
-        filtered = _allItems.where((i) => i.type == 'expense' || i.type == 'owned').toList();
+        filtered = _allItems
+            .where((i) => i.type == 'expense' || i.type == 'owned')
+            .toList();
         break;
       case ItemFilterOption.subscriptions:
         filtered = _allItems.where((i) => i.type == 'subscription').toList();
         break;
       case ItemFilterOption.cloudServices:
-        filtered = _allItems.where((i) => i.type == 'subscription' || i.category == '云服务/工具').toList();
+        filtered = _allItems
+            .where((i) => i.type == 'subscription' || i.category == '云服务/工具')
+            .toList();
         break;
     }
 
@@ -304,7 +321,8 @@ class AllItemsListViewModel extends ChangeNotifier {
         filtered.sort((a, b) => a.tier.index.compareTo(b.tier.index));
         break;
       case ItemSortOption.dailyCost:
-        filtered.sort((a, b) => (a.dailyCost ?? double.infinity).compareTo(b.dailyCost ?? double.infinity));
+        filtered.sort((a, b) => (a.dailyCost ?? double.infinity)
+            .compareTo(b.dailyCost ?? double.infinity));
         break;
       case ItemSortOption.category:
         filtered.sort((a, b) => (a.category ?? '').compareTo(b.category ?? ''));

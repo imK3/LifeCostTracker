@@ -48,20 +48,20 @@ class CheckWishlistDailyCostImpactUseCase
 
   /// Constructor
   /// 构造函数
-  CheckWishlistDailyCostImpactUseCase(this.calculateAverageDailyCostUseCase);
+  CheckWishlistDailyCostImpactUseCase(
+      {required this.calculateAverageDailyCostUseCase});
 
   /// Execute the use case to check the impact of a wishlist item on daily cost
   /// 执行用例以检查愿望清单项对每日成本的影响
   @override
   Future<DailyCostImpact> call(WishlistItem item) async {
-    final currentDailyCost =
-        await calculateAverageDailyCostUseCase(NoParams());
+    final currentDailyCost = await calculateAverageDailyCostUseCase(NoParams());
 
     final current = currentDailyCost ?? 0;
     final itemCost = item.dailyCost ?? 0;
     final newCost = current + itemCost;
     final absoluteIncrease = itemCost;
-    final percentageIncrease = current > 0 ? itemCost / current : 0;
+    final percentageIncrease = current > 0 ? itemCost / current : 0.0;
 
     return DailyCostImpact(
       currentDailyCost: current,

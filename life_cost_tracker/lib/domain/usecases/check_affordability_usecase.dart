@@ -48,14 +48,13 @@ class CheckAffordabilityUseCase
 
   /// Constructor
   /// 构造函数
-  CheckAffordabilityUseCase(this.calculateAverageDailyCostUseCase);
+  CheckAffordabilityUseCase({required this.calculateAverageDailyCostUseCase});
 
   /// Execute the use case to check if a wishlist item is affordable
   /// 执行用例以检查愿望清单项是否可负担
   @override
   Future<AffordabilityResult> call(WishlistItem item) async {
-    final currentDailyCost =
-        await calculateAverageDailyCostUseCase(NoParams());
+    final currentDailyCost = await calculateAverageDailyCostUseCase(NoParams());
 
     if (currentDailyCost == null) {
       return AffordabilityResult(
@@ -76,7 +75,7 @@ class CheckAffordabilityUseCase
 
     if (impactPercentage > 0.3) {
       isAffordable = false;
-      recommendation = '这个物品会增加你 30% 以上的每日成本，建议再考虑一下。'; 
+      recommendation = '这个物品会增加你 30% 以上的每日成本，建议再考虑一下。';
       // This item will increase your daily cost by over 30%, consider carefully.
     } else if (impactPercentage > 0.1) {
       recommendation = '这个物品会增加你 10-30% 的每日成本，确保你真的需要它。';

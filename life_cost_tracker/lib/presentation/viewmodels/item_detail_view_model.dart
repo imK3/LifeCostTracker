@@ -363,4 +363,81 @@ class ItemDetailViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Unified load item method (by ID and type)
+  /// 统一的加载物品方法（通过 ID 和类型）
+  Future<void> loadItem(String id, String type) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      switch (type) {
+        case 'expense':
+          await loadExpense(id);
+          break;
+        case 'subscription':
+          await loadSubscription(id);
+          break;
+        case 'wishlist':
+        case 'owned':
+        default:
+          await loadWishlistItem(id);
+          break;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Unified item getter (returns appropriate type as dynamic)
+  /// 统一的物品获取器（返回适当的类型作为 dynamic）
+  dynamic get item {
+    switch (_itemType) {
+      case DetailItemType.expense:
+        return _expense;
+      case DetailItemType.subscription:
+        return _subscription;
+      case DetailItemType.wishlist:
+      case DetailItemType.owned:
+        return _wishlistItem;
+      default:
+        return null;
+    }
+  }
+
+  /// Toggle item ownership (wishlist ↔ owned)
+  /// 切换物品所有权（愿望清单 ↔ 已拥有）
+  Future<void> toggleItemOwnership(String id, String type) async {
+    if (_itemType != DetailItemType.wishlist &&
+        _itemType != DetailItemType.owned) return;
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final newOwned = !_wishlistItem!.isOwned;
+      final updated = _wishlistItem!.copyWith(
+        isOwned: newOwned,
+      );
+      await _wishlistItemRepository.updateWishlistItem(updated);
+      _wishlistItem = updated;
+      _itemType = newOwned ? DetailItemType.owned : DetailItemType.wishlist;
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Mark item as sold (alias for markAsSoldGone)
+  /// 标记物品为已售出（markAsSoldGone 的别名）
+  Future<void> markItemAsSold(String id, String type) async {
+    await markAsSoldGone();
+  }
 }

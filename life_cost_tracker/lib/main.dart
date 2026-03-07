@@ -80,21 +80,44 @@ void main() async {
 
   // Create use case instances
   // 创建用例实例
-  final addExpenseUseCase = AddExpenseUseCase(expenseRepository: expenseRepository);
-  final getExpensesUseCase = GetExpensesUseCase(expenseRepository: expenseRepository);
-  final addCreditAccountUseCase = AddCreditAccountUseCase(creditAccountRepository: creditAccountRepository);
-  final calculateCreditUtilizationUseCase = CalculateCreditUtilizationUseCase(creditAccountRepository: creditAccountRepository);
-  final addSubscriptionUseCase = AddSubscriptionUseCase(subscriptionRepository: subscriptionRepository);
-  final getUpcomingObligationsUseCase = GetUpcomingObligationsUseCase(creditAccountRepository: creditAccountRepository, subscriptionRepository: subscriptionRepository);
-  final addWishlistItemUseCase = AddWishlistItemUseCase(wishlistItemRepository: wishlistItemRepository);
-  final calculateAverageDailyCostUseCase = CalculateAverageDailyCostUseCase(expenseRepository: expenseRepository, subscriptionRepository: subscriptionRepository, wishlistItemRepository: wishlistItemRepository);
-  final checkAffordabilityUseCase = CheckAffordabilityUseCase(expenseRepository: expenseRepository, subscriptionRepository: subscriptionRepository, wishlistItemRepository: wishlistItemRepository);
-  final calculateDailyCostBreakdownUseCase = CalculateDailyCostBreakdownUseCase(subscriptionRepository: subscriptionRepository, wishlistItemRepository: wishlistItemRepository);
-  final checkWishlistDailyCostImpactUseCase = CheckWishlistDailyCostImpactUseCase(expenseRepository: expenseRepository, subscriptionRepository: subscriptionRepository, wishlistItemRepository: wishlistItemRepository);
-  final calculateWishlistDailySavingsTargetUseCase = CalculateWishlistDailySavingsTargetUseCase(wishlistItemRepository: wishlistItemRepository);
-  final generateMonthlyReportUseCase = GenerateMonthlyReportUseCase(expenseRepository: expenseRepository, subscriptionRepository: subscriptionRepository, wishlistItemRepository: wishlistItemRepository);
-  final generateDailyCostTrendUseCase = GenerateDailyCostTrendUseCase(expenseRepository: expenseRepository, subscriptionRepository: subscriptionRepository, wishlistItemRepository: wishlistItemRepository);
-  final compareWishlistDailyCostsUseCase = CompareWishlistDailyCostsUseCase(wishlistItemRepository: wishlistItemRepository);
+  final addExpenseUseCase =
+      AddExpenseUseCase(expenseRepository: expenseRepository);
+  final getExpensesUseCase =
+      GetExpensesUseCase(expenseRepository: expenseRepository);
+  final addCreditAccountUseCase =
+      AddCreditAccountUseCase(creditAccountRepository: creditAccountRepository);
+  final calculateCreditUtilizationUseCase = CalculateCreditUtilizationUseCase(
+      creditAccountRepository: creditAccountRepository);
+  final addSubscriptionUseCase =
+      AddSubscriptionUseCase(subscriptionRepository: subscriptionRepository);
+  final getUpcomingObligationsUseCase = GetUpcomingObligationsUseCase(
+      creditAccountRepository: creditAccountRepository,
+      subscriptionRepository: subscriptionRepository);
+  final addWishlistItemUseCase =
+      AddWishlistItemUseCase(wishlistItemRepository: wishlistItemRepository);
+  final calculateAverageDailyCostUseCase = CalculateAverageDailyCostUseCase(
+      expenseRepository: expenseRepository,
+      subscriptionRepository: subscriptionRepository,
+      wishlistItemRepository: wishlistItemRepository);
+  final checkAffordabilityUseCase = CheckAffordabilityUseCase(
+      calculateAverageDailyCostUseCase: calculateAverageDailyCostUseCase);
+  final calculateDailyCostBreakdownUseCase = CalculateDailyCostBreakdownUseCase(
+      subscriptionRepository: subscriptionRepository,
+      wishlistItemRepository: wishlistItemRepository);
+  final checkWishlistDailyCostImpactUseCase =
+      CheckWishlistDailyCostImpactUseCase(
+          calculateAverageDailyCostUseCase: calculateAverageDailyCostUseCase);
+  final calculateWishlistDailySavingsTargetUseCase =
+      CalculateWishlistDailySavingsTargetUseCase();
+  final generateMonthlyReportUseCase = GenerateMonthlyReportUseCase(
+      expenseRepository: expenseRepository,
+      subscriptionRepository: subscriptionRepository);
+  final generateDailyCostTrendUseCase = GenerateDailyCostTrendUseCase(
+      expenseRepository: expenseRepository,
+      subscriptionRepository: subscriptionRepository,
+      wishlistItemRepository: wishlistItemRepository);
+  final compareWishlistDailyCostsUseCase = CompareWishlistDailyCostsUseCase(
+      wishlistItemRepository: wishlistItemRepository);
 
   runApp(
     MultiProvider(
@@ -104,7 +127,7 @@ void main() async {
         Provider.value(value: creditAccountRepository),
         Provider.value(value: subscriptionRepository),
         Provider.value(value: wishlistItemRepository),
-        
+
         // Use Cases
         Provider.value(value: addExpenseUseCase),
         Provider.value(value: getExpensesUseCase),
@@ -121,17 +144,16 @@ void main() async {
         Provider.value(value: generateMonthlyReportUseCase),
         Provider.value(value: generateDailyCostTrendUseCase),
         Provider.value(value: compareWishlistDailyCostsUseCase),
-        
+
         // View Models
         ChangeNotifierProvider(
           create: (context) => HomeDashboardViewModel(
-            expenseRepository: expenseRepository,
-            subscriptionRepository: subscriptionRepository,
-            creditAccountRepository: creditAccountRepository,
             calculateAverageDailyCostUseCase: calculateAverageDailyCostUseCase,
             getUpcomingObligationsUseCase: getUpcomingObligationsUseCase,
-            calculateCreditUtilizationUseCase: calculateCreditUtilizationUseCase,
-            calculateDailyCostBreakdownUseCase: calculateDailyCostBreakdownUseCase,
+            calculateCreditUtilizationUseCase:
+                calculateCreditUtilizationUseCase,
+            calculateDailyCostBreakdownUseCase:
+                calculateDailyCostBreakdownUseCase,
           ),
         ),
         ChangeNotifierProvider(
@@ -143,9 +165,8 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (context) => AddNewItemViewModel(
-            addExpenseUseCase: addExpenseUseCase,
-            addSubscriptionUseCase: addSubscriptionUseCase,
-            addWishlistItemUseCase: addWishlistItemUseCase,
+            expenseRepository: expenseRepository,
+            wishlistItemRepository: wishlistItemRepository,
           ),
         ),
         ChangeNotifierProvider(

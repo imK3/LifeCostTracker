@@ -16,14 +16,22 @@ class ExpenseAdapter extends TypeAdapter<Expense> {
 
   @override
   Expense read(BinaryReader reader) {
+    final id = reader.readString();
+    final amount = reader.readDouble();
+    final category = ExpenseCategory.values[reader.readInt()];
+    final date = DateTime.parse(reader.readString());
+    final notes = reader.readString();
+    final receiptPhotoUrl = reader.readString();
+    final estimatedUsageDays = reader.readInt();
+
     return Expense(
-      id: reader.readString(),
-      amount: reader.readDouble(),
-      category: ExpenseCategory.values[reader.readInt()],
-      date: DateTime.parse(reader.readString()),
-      notes: reader.readString(),
-      receiptPhotoUrl: reader.readString(),
-      estimatedUsageDays: reader.readInt(),
+      id: id,
+      amount: amount,
+      category: category,
+      date: date,
+      notes: notes.isNotEmpty ? notes : null,
+      receiptPhotoUrl: receiptPhotoUrl.isNotEmpty ? receiptPhotoUrl : null,
+      estimatedUsageDays: estimatedUsageDays > 0 ? estimatedUsageDays : null,
     );
   }
 

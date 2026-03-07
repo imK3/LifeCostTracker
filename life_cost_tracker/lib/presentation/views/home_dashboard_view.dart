@@ -13,11 +13,8 @@ import 'item_detail_view.dart';
 
 // Import types from viewmodels
 // 从 viewmodels 导入类型
-import '../viewmodels/all_items_list_view_model.dart' show
-    DisplayItem,
-    ItemSortOption,
-    ItemFilterOption,
-    CostEffectivenessTier;
+import '../viewmodels/all_items_list_view_model.dart'
+    show DisplayItem, ItemSortOption, ItemFilterOption, CostEffectivenessTier;
 
 /// Home Dashboard View - main screen of the app
 /// 主页仪表板视图 - 应用的主屏幕
@@ -79,28 +76,19 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               SliverToBoxAdapter(
                 child: _buildTopHeroSection(context, dashboardVM),
               ),
-              
+
               // Sorting Toggle
               // 排序切换
               SliverToBoxAdapter(
                 child: _buildSortingToggle(context, listVM),
               ),
-              
-              // All Items List
-              // 所有物品列表
+
+              // All Items List (grouped by tier)
+              // 所有物品列表（按等级分组）
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      if (index < listVM.displayItems.length) {
-                        return _buildItemCard(context, listVM.displayItems[index]);
-                      }
-                      return null;
-                    },
-                    childCount: listVM.displayItems.length,
-                  ),
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                sliver: _buildGroupedItemsList(context, listVM),
               ),
             ],
           );
@@ -125,8 +113,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   Widget _buildTopHeroSection(BuildContext context, HomeDashboardViewModel vm) {
     final averageDailyCost = vm.averageDailyCost ?? 0.0;
     final dailyCostBreakdown = vm.dailyCostBreakdown;
-    final subscriptionDailyCost = dailyCostBreakdown?.subscriptionDailyCost ?? 0.0;
-    final totalItems = context.read<AllItemsListViewModel>().displayItems.length;
+    final subscriptionDailyCost =
+        dailyCostBreakdown?.subscriptionDailyCost ?? 0.0;
+    final totalItems =
+        context.read<AllItemsListViewModel>().displayItems.length;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -148,19 +138,19 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             title: '平均每日成本',
             value: '${averageDailyCost.toStringAsFixed(0)}元/天',
             valueStyle: Theme.of(context).textTheme.displaySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
-          
+
           // Middle: Monthly Subscription Cost
           // 中间：月度订阅支出
           _buildMetricCard(
             context,
             title: '月度订阅支出',
             value: '${(subscriptionDailyCost * 30).toStringAsFixed(0)}元/月',
-            subtitle: '${subscriptionDailyCost.toStringAsFixed(1)}元/天',
+            subtitle: Text('${subscriptionDailyCost.toStringAsFixed(1)}元/天'),
           ),
-          
+
           // Right: Total Items
           // 右侧：全部项目
           _buildMetricCard(
@@ -248,7 +238,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     final double? dailyCost = item.dailyCost;
     final String? type = item.type;
     final String? tierLabel = _getTierLabel(item.tier);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -264,7 +254,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               Chip(
                 label: Text(tierLabel),
                 visualDensity: VisualDensity.compact,
-                backgroundColor: _getTierColor(item.tier, context).withOpacity(0.2),
+                backgroundColor:
+                    _getTierColor(item.tier, context).withOpacity(0.2),
               ),
           ],
         ),
@@ -393,6 +384,98 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
         return '订阅';
       case ItemFilterOption.cloudServices:
         return '云服务/工具';
+    }
+  }
+
+  /// Build grouped items list by cost-effectiveness tier
+  /// 按性价比等级构建分组的物品列表
+  Widget _buildGroupedItemsList(
+    BuildContext context,
+    AllItemsListViewModel listVM,
+  ) {
+    final groupedItems = listVM.groupedByTier;
+    final tiers = CostEffectivenessTier.values;
+
+    final List<Widget> flattenedChildren = [];
+
+    for (final tier in tiers) {
+      final tierItems = groupedItems[tier] ?? [];
+      if (tierItems.isEmpty) continue;
+
+      flattenedChildren.add(_buildTierHeader(context, tier));
+
+      for (final item in tierItems) {
+        flattenedChildren.add(_buildItemCard(context, item));
+      }
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          if (index < flattenedChildren.length) {
+            return flattenedChildren[index];
+          }
+          return null;
+        },
+        childCount: flattenedChildren.length,
+      ),
+    );
+  }
+
+  /// Build tier header with gradient for divine tier
+  /// 构建等级标题，神仙等级使用渐变
+  Widget _buildTierHeader(BuildContext context, CostEffectivenessTier tier) {
+    final tierName = _getTierLabel(tier);
+    final isDivine = tier == CostEffectivenessTier.divine;
+    final tierColor = _getTierColor(tier, context);
+
+    if (isDivine) {
+      // Divine tier with gradient
+      // 神仙等级使用渐变
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.green.shade400,
+              Colors.green.shade300,
+              Colors.blue.shade400,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          tierName ?? '',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    } else {
+      // Other tiers with solid color
+      // 其他等级使用纯色
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: tierColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: tierColor.withOpacity(0.3)),
+        ),
+        child: Text(
+          tierName ?? '',
+          style: TextStyle(
+            color: tierColor,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
     }
   }
 }

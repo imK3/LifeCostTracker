@@ -37,7 +37,8 @@ class WishlistDailyCostComparison {
   /// Which item is more cost-effective (lower daily cost)
   /// 哪个物品更具成本效益（每日成本更低）
   String get moreCostEffective {
-    if (itemADailyCost == null || itemBDailyCost == null) return 'Cannot compare';
+    if (itemADailyCost == null || itemBDailyCost == null)
+      return 'Cannot compare';
     if (itemADailyCost! < itemBDailyCost!) return 'Item A';
     if (itemADailyCost! > itemBDailyCost!) return 'Item B';
     return 'Equal';
@@ -69,7 +70,7 @@ class CompareWishlistDailyCostsUseCase
 
   /// Constructor
   /// 构造函数
-  CompareWishlistDailyCostsUseCase(this.wishlistItemRepository);
+  CompareWishlistDailyCostsUseCase({required this.wishlistItemRepository});
 
   /// Execute * use case to compare two wishlist items
   /// 执行用例以比较两个愿望清单项

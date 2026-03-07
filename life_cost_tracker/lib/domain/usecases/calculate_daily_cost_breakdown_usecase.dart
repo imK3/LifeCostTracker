@@ -2,8 +2,6 @@
 // LifeCostTracker
 // Created by LifeCostTracker Team
 
-import '../entities/subscription.dart';
-import '../entities/wishlist_item.dart';
 import '../repositories/subscription_repository.dart';
 import '../repositories/wishlist_item_repository.dart';
 import 'base_usecase.dart';
@@ -80,7 +78,8 @@ class CalculateDailyCostBreakdownUseCase
     return DailyCostBreakdown(
       subscriptionDailyCost: subscriptionCost,
       ownedItemDailyCost: ownedItemCost,
-      oneTimeExpenseDailyCost: 0.0, // Would need expense repository // 需要支出仓库来实现
+      oneTimeExpenseDailyCost:
+          0.0, // Would need expense repository // 需要支出仓库来实现
     );
   }
 }

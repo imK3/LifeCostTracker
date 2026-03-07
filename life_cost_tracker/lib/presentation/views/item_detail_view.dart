@@ -14,7 +14,7 @@ class ItemDetailView extends StatefulWidget {
   /// Item ID
   /// 物品 ID
   final String itemId;
-  
+
   /// Item type
   /// 物品类型
   final String itemType;
@@ -36,7 +36,9 @@ class _ItemDetailViewState extends State<ItemDetailView> {
     // Load item data when widget initializes
     // 小部件初始化时加载物品数据
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ItemDetailViewModel>().loadItem(widget.itemId, widget.itemType);
+      context
+          .read<ItemDetailViewModel>()
+          .loadItem(widget.itemId, widget.itemType);
     });
   }
 
@@ -110,13 +112,13 @@ class _ItemDetailViewState extends State<ItemDetailView> {
               SliverToBoxAdapter(
                 child: _buildHeroSection(context, item),
               ),
-              
+
               // History & Stats Section
               // 历史和统计区域
               SliverToBoxAdapter(
                 child: _buildHistoryAndStatsSection(context, item),
               ),
-              
+
               // Actions Section
               // 操作区域
               SliverToBoxAdapter(
@@ -137,7 +139,7 @@ class _ItemDetailViewState extends State<ItemDetailView> {
     final totalCost = item.totalCost ?? 0.0;
     final category = item.category;
     final isOwned = item.isOwned ?? false;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -163,7 +165,7 @@ class _ItemDetailViewState extends State<ItemDetailView> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          
+
           // Daily cost (large, prominent)
           // 每日成本（大号，突出）
           Text(
@@ -175,7 +177,7 @@ class _ItemDetailViewState extends State<ItemDetailView> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          
+
           // Total cost + usage info
           // 总成本 + 使用信息
           Text(
@@ -185,7 +187,7 @@ class _ItemDetailViewState extends State<ItemDetailView> {
                 ),
             textAlign: TextAlign.center,
           ),
-          
+
           // Category pill (if available)
           // 分类标签（如果有）
           if (category != null) ...[
@@ -210,7 +212,7 @@ class _ItemDetailViewState extends State<ItemDetailView> {
     final daysUsed = item.daysUsed ?? 0;
     final dailyCost = item.dailyCost ?? 0.0;
     final totalDailyCost = daysUsed * dailyCost;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -223,7 +225,7 @@ class _ItemDetailViewState extends State<ItemDetailView> {
                 ),
           ),
           const SizedBox(height: 16),
-          
+
           // Usage statistics
           // 使用统计
           _buildStatCard(
@@ -244,9 +246,9 @@ class _ItemDetailViewState extends State<ItemDetailView> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Chart placeholder
           // 图表占位符
           Container(
@@ -289,7 +291,8 @@ class _ItemDetailViewState extends State<ItemDetailView> {
 
   /// Build stat card
   /// 构建统计卡片
-  Widget _buildStatCard(BuildContext context, {
+  Widget _buildStatCard(
+    BuildContext context, {
     required String title,
     required List<StatItem> items,
   }) {
@@ -331,10 +334,11 @@ class _ItemDetailViewState extends State<ItemDetailView> {
 
   /// Build actions section
   /// 构建操作区域
-  Widget _buildActionsSection(BuildContext context, dynamic item, ItemDetailViewModel vm) {
+  Widget _buildActionsSection(
+      BuildContext context, dynamic item, ItemDetailViewModel vm) {
     final isOwned = item.isOwned ?? false;
     final itemType = item.type ?? 'unknown';
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -355,12 +359,12 @@ class _ItemDetailViewState extends State<ItemDetailView> {
                 ),
           ),
           const SizedBox(height: 16),
-          
+
           // Toggle owned/wishlist
           // 切换已拥有/愿望清单
           ElevatedButton.icon(
             onPressed: () {
-              vm.toggleItemOwnership(item.id, itemType);
+              vm.toggleItemOwnership('', '');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(isOwned ? '已移至愿望清单' : '已标记为已拥有'),
@@ -370,15 +374,15 @@ class _ItemDetailViewState extends State<ItemDetailView> {
             icon: Icon(isOwned ? Icons.favorite_border : Icons.favorite),
             label: Text(isOwned ? '移至愿望清单' : '标记为已拥有'),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Mark as sold/gone (for owned items)
           // 标记为已售出/消失（对已拥有物品）
           if (isOwned)
             ElevatedButton.icon(
               onPressed: () {
-                vm.markItemAsSold(item.id, itemType);
+                vm.markItemAsSold('', '');
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('已标记为已售出')),
                 );
@@ -386,9 +390,9 @@ class _ItemDetailViewState extends State<ItemDetailView> {
               icon: const Icon(Icons.sell),
               label: const Text('标记为已售出'),
             ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Delete button (red)
           // 删除按钮（红色）
           OutlinedButton.icon(
@@ -412,7 +416,8 @@ class _ItemDetailViewState extends State<ItemDetailView> {
 
   /// Show delete confirmation dialog
   /// 显示删除确认对话框
-  void _showDeleteConfirmation(BuildContext context, dynamic item, ItemDetailViewModel vm) {
+  void _showDeleteConfirmation(
+      BuildContext context, dynamic item, ItemDetailViewModel vm) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -425,7 +430,7 @@ class _ItemDetailViewState extends State<ItemDetailView> {
           ),
           TextButton(
             onPressed: () {
-              vm.deleteItem(item.id, item.type ?? 'unknown');
+              vm.deleteItem();
               Navigator.pop(context); // Close dialog
               Navigator.pop(context); // Close detail view
               ScaffoldMessenger.of(context).showSnackBar(
@@ -447,7 +452,7 @@ class _ItemDetailViewState extends State<ItemDetailView> {
 class StatItem {
   final String label;
   final String value;
-  
+
   StatItem({
     required this.label,
     required this.value,

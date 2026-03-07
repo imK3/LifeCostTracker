@@ -5,22 +5,7 @@
 // Settings ViewModel
 
 import 'package:flutter/foundation.dart';
-
-/// Theme mode
-/// 主题模式
-enum ThemeMode {
-  /// Light mode
-  /// 浅色模式
-  light,
-
-  /// Dark mode
-  /// 深色模式
-  dark,
-
-  /// System mode
-  /// 跟随系统
-  system,
-}
+import 'package:flutter/material.dart';
 
 /// Currency
 /// 货币

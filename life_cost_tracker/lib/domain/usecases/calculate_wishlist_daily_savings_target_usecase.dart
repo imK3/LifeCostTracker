@@ -36,7 +36,6 @@ class DailySavingsTarget {
 /// 计算愿望清单每日储蓄目标用例
 class CalculateWishlistDailySavingsTargetUseCase
     implements BaseUseCase<DailySavingsTarget, WishlistItem> {
-      
   /// Execute the use case to calculate the daily savings target
   /// 执行用例以计算每日储蓄目标
   @override

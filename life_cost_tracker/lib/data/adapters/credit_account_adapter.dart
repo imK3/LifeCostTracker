@@ -16,17 +16,24 @@ class CreditAccountAdapter extends TypeAdapter<CreditAccount> {
 
   @override
   CreditAccount read(BinaryReader reader) {
+    final id = reader.readString();
+    final name = reader.readString();
+    final type = CreditAccountType.values[reader.readInt()];
+    final balance = reader.readDouble();
+    final creditLimit = reader.readDouble();
+    final apr = reader.readDouble();
+    final dueDateStr = reader.readString();
+    final minimumPayment = reader.readDouble();
+
     return CreditAccount(
-      id: reader.readString(),
-      name: reader.readString(),
-      type: CreditAccountType.values[reader.readInt()],
-      balance: reader.readDouble(),
-      creditLimit: reader.readDouble(),
-      apr: reader.readDouble(),
-      dueDate: reader.readString()?.isNotEmpty == true
-          ? DateTime.parse(reader.readString())
-          : null,
-      minimumPayment: reader.readDouble(),
+      id: id,
+      name: name,
+      type: type,
+      balance: balance,
+      creditLimit: creditLimit > 0 ? creditLimit : null,
+      apr: apr > 0 ? apr : null,
+      dueDate: dueDateStr.isNotEmpty ? DateTime.parse(dueDateStr) : null,
+      minimumPayment: minimumPayment > 0 ? minimumPayment : null,
     );
   }
 

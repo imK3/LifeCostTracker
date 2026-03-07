@@ -79,7 +79,7 @@ class GenerateDailyCostTrendUseCase
     double ownedItemDailyCost = 0;
     for (final item in wishlistItems) {
       if (item.isOwned && item.dailyCost != null) {
-        ownedItemDailyCost += itemDailyCost!;
+        ownedItemDailyCost += item.dailyCost!;
       }
     }
 

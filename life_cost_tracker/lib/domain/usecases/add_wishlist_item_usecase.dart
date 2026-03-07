@@ -11,16 +11,16 @@ import 'base_usecase.dart';
 class AddWishlistItemUseCase implements BaseUseCase<void, WishlistItem> {
   /// Wishlist item repository
   /// 愿望清单仓库
-  final WishlistItemRepository repository;
+  final WishlistItemRepository wishlistItemRepository;
 
   /// Constructor
   /// 构造函数
-  AddWishlistItemUseCase(this.repository);
+  AddWishlistItemUseCase({required this.wishlistItemRepository});
 
   /// Execute the use case
   /// 执行用例
   @override
   Future<void> call(WishlistItem item) async {
-    await repository.addWishlistItem(item);
+    await wishlistItemRepository.addWishlistItem(item);
   }
 }

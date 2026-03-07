@@ -11,16 +11,16 @@ import 'base_usecase.dart';
 class AddSubscriptionUseCase implements BaseUseCase<void, Subscription> {
   /// Subscription repository
   /// 订阅仓库
-  final SubscriptionRepository repository;
+  final SubscriptionRepository subscriptionRepository;
 
   /// Constructor
   /// 构造函数
-  AddSubscriptionUseCase(this.repository);
+  AddSubscriptionUseCase({required this.subscriptionRepository});
 
   /// Execute the use case
   /// 执行用例
   @override
   Future<void> call(Subscription subscription) async {
-    await repository.addSubscription(subscription);
+    await subscriptionRepository.addSubscription(subscription);
   }
 }
