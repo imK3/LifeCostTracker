@@ -6,6 +6,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../viewmodels/item_detail_view_model.dart';
 
 /// Item Detail View - shows detailed information about an item
@@ -249,36 +251,54 @@ class _ItemDetailViewState extends State<ItemDetailView> {
 
           const SizedBox(height: 16),
 
-          // Chart placeholder
-          // 图表占位符
+          // Chart implementation
+          // 图表实现
           Container(
             height: 200,
+            padding: const EdgeInsets.only(right: 16, left: 8, top: 16, bottom: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.show_chart,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: dailyCost > 0 ? dailyCost : 1,
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      getTitlesWidget: (value, meta) {
+                        if (value == 0) return const Text('开始');
+                        if (value == daysUsed.toDouble()) return const Text('今天');
+                        return const Text('');
+                      },
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '每日成本趋势图表',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '即将到来',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                ),
+                borderData: FlBorderData(show: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: [
+                      const FlSpot(0, 0),
+                      FlSpot(daysUsed.toDouble(), totalDailyCost),
+                    ],
+                    isCurved: true,
+                    color: Theme.of(context).colorScheme.primary,
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: const FlDotData(show: true),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                    ),
                   ),
                 ],
               ),
