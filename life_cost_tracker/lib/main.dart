@@ -46,6 +46,8 @@ import 'presentation/viewmodels/reports_view_model.dart';
 import 'presentation/viewmodels/settings_view_model.dart';
 import 'presentation/views/home_dashboard_view.dart';
 
+import 'presentation/views/main_navigation.dart';
+
 void main() async {
   // Initialize Hive
   // 初始化 Hive
@@ -213,7 +215,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       themeMode: ThemeMode.system,
-      home: const HomeDashboardView(),
+      home: const MainNavigation(),
     );
   }
 }
