@@ -277,19 +277,13 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
         onTap: () {
           // Navigate to item detail
           // 导航到物品详情
-          // For now, show a dialog
-          // 现在，显示一个对话框
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(name),
-              content: Text('Item detail view coming soon'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('关闭'),
-                ),
-              ],
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ItemDetailView(
+                itemId: item.id,
+                itemType: item.type,
+              ),
             ),
           );
         },
