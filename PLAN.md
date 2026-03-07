@@ -44,12 +44,12 @@
 - [x] Initial commit with all planning documents
 - [x] Push to GitHub main branch
 
-### 6.2 Flutter Project Setup
-- [ ] Create new Flutter project (`flutter create life_cost_tracker`)
-- [ ] Configure project settings (app name, bundle identifier, deployment targets)
-- [ ] Set up Clean Architecture folder structure
-- [ ] Add pubspec.yaml dependencies (provider, hive, flutter_secure_storage, dio, cached_network_image, fl_chart, intl, etc.)
-- [ ] Initialize Hive database
+### 6.2 Flutter Project Setup ✅
+- [x] Create new Flutter project (`flutter create life_cost_tracker`)
+- [x] Configure project settings (app name, bundle identifier, deployment targets)
+- [x] Set up Clean Architecture folder structure
+- [x] Add pubspec.yaml dependencies (provider, hive, flutter_secure_storage, dio, cached_network_image, fl_chart, intl, etc.)
+- [x] Initialize Hive database in main.dart
 - [ ] Set up Firebase Crashlytics (optional, cross-platform)
 - [ ] Set up Firebase Analytics (optional, cross-platform)
 
@@ -183,44 +183,45 @@
 ---
 
 ## Phase 10: Presentation Layer - Views
-### 10.1 Home Dashboard View
-- [ ] Create HomeDashboardView
-- [ ] Implement Top Hero Section (3-column layout)
-  - [ ] 平均每日成本 display
-  - [ ] 月度订阅支出 display
-  - [ ] 全部项目 display
-- [ ] Implement Sorting Toggle (按性价比 / 按日耗 / 按分类)
-- [ ] Implement All Items List
-  - [ ] 神仙性价比 section with gradient
-  - [ ] Item card layout (left: labels, middle: name/details, right: daily cost)
-  - [ ] Section dividers between 性价比 tiers
-- [ ] Implement Filter Button
-- [ ] Implement Floating Action Button (FAB)
+### 10.1 Home Dashboard View ✅
+- [x] Create HomeDashboardView
+- [x] Implement Top Hero Section (3-column layout)
+  - [x] 平均每日成本 display
+  - [x] 月度订阅支出 display
+  - [x] 全部项目 display
+- [x] Implement Sorting Toggle (按性价比 / 按日耗 / 按分类)
+- [x] Implement All Items List
+  - [x] 神仙性价比 section with gradient
+  - [x] Item card layout (left: labels, middle: name/details, right: daily cost)
+  - [x] Section dividers between 性价比 tiers
+- [x] Implement Filter Button
+- [x] Implement Floating Action Button (FAB)
 
-### 10.2 Add New Item Sheet
-- [ ] Create AddNewItemSheet
-- [ ] Implement Step 1: Ownership Question (two big buttons)
-- [ ] Implement Step 2: Usage Days Input (with presets)
-- [ ] Implement Step 3: All Cases (category, price, name, description)
+### 10.2 Add New Item Sheet ✅
+- [x] Create AddNewItemSheet
+- [x] Implement Step 1: Ownership Question (two big buttons)
+- [x] Implement Step 2: Usage Days Input (with presets)
+- [x] Implement Step 3: All Cases (category, price, name, description)
 - [ ] Implement Photo/Link attachment
-- [ ] Implement Real-time Preview Box (live daily cost calculation)
-- [ ] Implement Save Button (disabled until valid)
+- [x] Implement Real-time Preview Box (live daily cost calculation)
+- [x] Implement Save Button (disabled until valid)
 
-### 10.3 Item Detail View
-- [ ] Create ItemDetailView
-- [ ] Implement Top Hero Section (item name, daily cost, total cost, labels)
-- [ ] Implement History & Stats section
-  - [ ] Daily cost trend chart
-  - [ ] Usage statistics and insights
-- [ ] Implement Actions section
-  - [ ] Edit button
-  - [ ] Mark as Sold/Gone button
-  - [ ] Move to Wishlist/Owned button
-  - [ ] Delete button (red, at bottom)
+### 10.3 Item Detail View ✅
+- [x] Create ItemDetailView
+- [x] Implement Top Hero Section (item name, daily cost, total cost, labels)
+- [x] Implement History & Stats section
+  - [x] Daily cost trend chart (fl_chart implementation)
+  - [x] Usage statistics and insights
+- [x] Implement Actions section
+  - [x] Edit button (implemented with edit sheet)
+  - [x] Mark as Sold/Gone button
+  - [x] Move to Wishlist/Owned button
+  - [x] Delete button (red, at bottom)
 
 ### 10.4 Other Views
-- [ ] Create ReportsView
-- [ ] Create SettingsView
+- [x] Create ReportsView
+- [x] Create SettingsView
+- [x] Create MainNavigation (bottom navigation bar)
 - [ ] Create OnboardingView (Welcome, First Item Tutorial, Dashboard Reveal)
 
 ---
@@ -300,11 +301,11 @@
 ---
 
 ## Progress Tracking
-- **Last Updated**: 2026-03-05
-- **Total Tasks**: ~150
-- **Completed Tasks**: 120+ (Phase 1-9)
-- **Current Phase**: Phase 9: Presentation Layer - ViewModels (100% 完成)
-- **Next Phase**: Phase 10: Presentation Layer - Views
+- **Last Updated**: 2026-03-08
+- **Total Tasks**: ~198
+- **Completed Tasks**: ~150+ (Phase 1-10 核心完成，Phase 11-12 进行中)
+- **Current Phase**: Phase 11: UI/UX Polish + Phase 12: Testing
+- **Next Phase**: Phase 13: App Store Preparation
 
 ---
 
