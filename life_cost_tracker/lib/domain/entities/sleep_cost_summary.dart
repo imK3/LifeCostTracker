@@ -2,7 +2,6 @@
 // LifeCostTracker
 // 睡后成本汇总实体
 
-import 'dart:math' as math;
 import 'recurring_cost.dart';
 import 'installment_plan.dart';
 import 'display_cycle.dart';
@@ -10,37 +9,23 @@ import 'display_cycle.dart';
 /// Sleep cost summary - aggregate data for dashboard display
 ///
 /// 睡后成本汇总
-/// totalDailyCost 包含所有 active 项（不区分已付/未付），即燃烧率
-/// 已付/未付分组用于缴费追踪
+/// - 燃烧率：totalDailyCost，所有 active 项，用 dailyCost × actualDays 展示
+/// - 缴费追踪：按到期时间分组，用实际 amount 展示
 class SleepCostSummary {
   /// Total daily cost (ALL active items)
-  /// 总日成本（所有活跃项，即燃烧率）
   final double totalDailyCost;
 
-  /// Daily cost from fixed living expenses
+  /// Daily cost breakdowns
   final double fixedLivingDaily;
-
-  /// Daily cost from subscriptions
   final double subscriptionDaily;
-
-  /// Daily cost from installment plans
   final double installmentDaily;
 
-  // --- 缴费追踪分组 ---
+  // --- 缴费追踪：按支付状态分组 ---
 
-  /// Unpaid fixed living items (待付)
   final List<RecurringCost> unpaidFixedLivingItems;
-
-  /// Unpaid subscription items (待付)
   final List<RecurringCost> unpaidSubscriptionItems;
-
-  /// Paid fixed living items (本期已付)
   final List<RecurringCost> paidFixedLivingItems;
-
-  /// Paid subscription items (本期已付)
   final List<RecurringCost> paidSubscriptionItems;
-
-  /// Active installment plans
   final List<InstallmentPlan> installmentItems;
 
   // --- 基础聚合 ---
@@ -62,7 +47,6 @@ class SleepCostSummary {
 
   // --- 燃烧率展示（按 DisplayCycle） ---
 
-  /// 燃烧率 = dailyCost × 实际天数
   double displayCost(DisplayCycle cycle) =>
       totalDailyCost * cycle.actualDays;
 
@@ -75,46 +59,57 @@ class SleepCostSummary {
   double installmentDisplayCost(DisplayCycle cycle) =>
       installmentDaily * cycle.actualDays;
 
-  // --- 缴费追踪（按 DisplayCycle） ---
+  // --- 缴费追踪：按到期时间 ---
 
-  /// 已缴金额
-  /// 已付项：dailyCost × min(账单覆盖天数, 显示周期天数)
-  /// 公式：一笔已付款覆盖了它的 billingCycle 天数，
-  ///       但在显示周期内最多只能算显示周期的天数
-  double paidAmountFor(DisplayCycle cycle) {
-    final displayDays = cycle.actualDays;
-    return paidItems.fold<double>(0, (sum, item) {
-      final coveredDays = item.billingCycle.daysInCycle;
-      return sum + item.dailyCost * math.min(coveredDays, displayDays);
-    });
+  /// 本月待缴的项（nextDueDate 在本月内且未付）
+  List<RecurringCost> get dueThisMonth {
+    final now = DateTime.now();
+    return unpaidItems.where((item) {
+      return item.nextDueDate.year == now.year &&
+          item.nextDueDate.month == now.month;
+    }).toList();
   }
 
-  /// 待缴金额
-  /// 未付项：dailyCost × 显示周期天数
-  /// 已付项剩余部分：dailyCost × max(0, 显示周期天数 - 账单覆盖天数)
-  double unpaidAmountFor(DisplayCycle cycle) {
-    final displayDays = cycle.actualDays;
-    // Unpaid items: full display period
-    final unpaidTotal = unpaidItems.fold<double>(
-        0, (sum, item) => sum + item.dailyCost * displayDays);
-    // Paid items: remaining uncovered portion
-    final paidRemaining = paidItems.fold<double>(0, (sum, item) {
-      final coveredDays = item.billingCycle.daysInCycle;
-      final remaining = math.max(0, displayDays - coveredDays);
-      return sum + item.dailyCost * remaining;
-    });
-    return unpaidTotal + paidRemaining;
+  /// 已逾期的项（nextDueDate 已过且未付）
+  List<RecurringCost> get overdueItems {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return unpaidItems.where((item) {
+      final due = DateTime(
+          item.nextDueDate.year, item.nextDueDate.month, item.nextDueDate.day);
+      return due.isBefore(today);
+    }).toList();
   }
 
-  /// 应付总额 = 所有 active 项 × 显示周期天数
-  double totalDueFor(DisplayCycle cycle) =>
-      totalDailyCost * cycle.actualDays;
-
-  /// 支付进度 (0.0 ~ 1.0)
-  double paymentProgressFor(DisplayCycle cycle) {
-    final total = totalDueFor(cycle);
-    return total > 0 ? paidAmountFor(cycle) / total : 0;
+  /// 未来待缴的项（nextDueDate 在本月之后且未付）
+  List<RecurringCost> get dueLater {
+    final now = DateTime.now();
+    return unpaidItems.where((item) {
+      if (item.nextDueDate.year > now.year) return true;
+      if (item.nextDueDate.year == now.year &&
+          item.nextDueDate.month > now.month) return true;
+      return false;
+    }).toList();
   }
+
+  /// 本月待缴总额（实际 amount）
+  double get dueThisMonthAmount =>
+      dueThisMonth.fold<double>(0, (sum, item) => sum + item.amount);
+
+  /// 逾期总额
+  double get overdueAmount =>
+      overdueItems.fold<double>(0, (sum, item) => sum + item.amount);
+
+  /// 已缴总额（实际 amount）
+  double get paidAmount =>
+      paidItems.fold<double>(0, (sum, item) => sum + item.amount);
+
+  /// 本期应缴总额（已缴 + 逾期 + 本月待缴）
+  double get totalDueAmount => paidAmount + overdueAmount + dueThisMonthAmount;
+
+  /// 缴费进度
+  double get paymentProgress =>
+      totalDueAmount > 0 ? paidAmount / totalDueAmount : 0;
 
   // --- 占比 ---
 

@@ -83,10 +83,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                   child: _buildHeroSection(context, vm, settings),
                 ),
 
-                // Monthly payment tracking card
+                // Payment tracking card (by due date)
                 if (vm.summary.totalItemCount > 0)
                   SliverToBoxAdapter(
-                    child: _buildMonthlyPaymentCard(context, vm, settings),
+                    child: _buildPaymentTrackingCard(context, vm, settings),
                   ),
 
                 // Pie Chart
@@ -111,28 +111,38 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                     ),
                   ),
 
-                // Fixed Living Costs Section
-                if (vm.summary.unpaidFixedLivingItems.isNotEmpty)
+                // Overdue items
+                if (vm.summary.overdueItems.isNotEmpty)
                   _buildCostSection(
                     context,
-                    title: '固定生活成本',
-                    subtitle:
-                        '${settings.currency}${vm.fixedLivingDisplayCost.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
-                    color: const Color(0xFF4CAF50),
-                    items: vm.summary.unpaidFixedLivingItems,
+                    title: '已逾期',
+                    subtitle: '${settings.currency}${vm.summary.overdueAmount.toStringAsFixed(0)}',
+                    color: Colors.red,
+                    items: vm.summary.overdueItems,
                     vm: vm,
                     settings: settings,
                   ),
 
-                // Subscription Costs Section
-                if (vm.summary.unpaidSubscriptionItems.isNotEmpty)
+                // Due this month
+                if (vm.summary.dueThisMonth.isNotEmpty)
                   _buildCostSection(
                     context,
-                    title: '订阅费用',
-                    subtitle:
-                        '${settings.currency}${vm.subscriptionDisplayCost.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
-                    color: const Color(0xFF2196F3),
-                    items: vm.summary.unpaidSubscriptionItems,
+                    title: '本月待缴',
+                    subtitle: '${settings.currency}${vm.summary.dueThisMonthAmount.toStringAsFixed(0)}',
+                    color: Colors.orange,
+                    items: vm.summary.dueThisMonth,
+                    vm: vm,
+                    settings: settings,
+                  ),
+
+                // Due later
+                if (vm.summary.dueLater.isNotEmpty)
+                  _buildCostSection(
+                    context,
+                    title: '未来待缴',
+                    subtitle: '',
+                    color: Colors.grey,
+                    items: vm.summary.dueLater,
                     vm: vm,
                     settings: settings,
                   ),
@@ -140,6 +150,15 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 // Installment Plans Section
                 if (vm.summary.installmentItems.isNotEmpty)
                   _buildInstallmentSection(context, vm, settings),
+
+                // Paid items section
+                if (vm.summary.paidItems.isNotEmpty)
+                  _buildPaidItemsList(
+                    context,
+                    vm.summary.paidItems,
+                    vm,
+                    settings,
+                  ),
 
                 // Empty state
                 if (vm.summary.totalItemCount == 0)
@@ -169,42 +188,6 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                         ],
                       ),
                     ),
-                  ),
-
-                // Paid items section
-                if (vm.summary.paidFixedLivingItems.isNotEmpty ||
-                    vm.summary.paidSubscriptionItems.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                      child: Row(
-                        children: [
-                          Icon(Icons.check_circle,
-                              size: 18, color: theme.colorScheme.outline),
-                          const SizedBox(width: 6),
-                          Text(
-                            '本期已支付',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.outline,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                if (vm.summary.paidFixedLivingItems.isNotEmpty ||
-                    vm.summary.paidSubscriptionItems.isNotEmpty)
-                  _buildPaidItemsList(
-                    context,
-                    [
-                      ...vm.summary.paidFixedLivingItems,
-                      ...vm.summary.paidSubscriptionItems,
-                    ],
-                    vm,
-                    settings,
                   ),
 
                 // Bottom padding
@@ -353,32 +336,17 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     );
   }
 
-  Widget _buildMonthlyPaymentCard(
+  Widget _buildPaymentTrackingCard(
     BuildContext context,
     SleepCostDashboardViewModel vm,
     SettingsViewModel settings,
   ) {
     final theme = Theme.of(context);
     final summary = vm.summary;
-    final cycle = vm.paymentCycle;
-    final paid = summary.paidAmountFor(cycle);
-    final unpaid = summary.unpaidAmountFor(cycle);
-    final progress = summary.paymentProgressFor(cycle);
     final now = DateTime.now();
-
-    // Title based on cycle
-    String title;
-    switch (cycle) {
-      case DisplayCycle.daily:
-        title = '今日缴费';
-      case DisplayCycle.monthly:
-        title = '${now.month}月缴费进度';
-      case DisplayCycle.quarterly:
-        final q = ((now.month - 1) ~/ 3) + 1;
-        title = '第${q}季度缴费进度';
-      case DisplayCycle.yearly:
-        title = '${now.year}年缴费进度';
-    }
+    final paid = summary.paidAmount;
+    final unpaid = summary.overdueAmount + summary.dueThisMonthAmount;
+    final progress = summary.paymentProgress;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -396,7 +364,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                   size: 18, color: theme.colorScheme.primary),
               const SizedBox(width: 6),
               Text(
-                title,
+                '${now.month}月缴费进度',
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -411,39 +379,6 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 10),
-          // Cycle selector
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<DisplayCycle>(
-              segments: const [
-                ButtonSegment(
-                  value: DisplayCycle.daily,
-                  label: Text('日', style: TextStyle(fontSize: 12)),
-                ),
-                ButtonSegment(
-                  value: DisplayCycle.monthly,
-                  label: Text('月', style: TextStyle(fontSize: 12)),
-                ),
-                ButtonSegment(
-                  value: DisplayCycle.quarterly,
-                  label: Text('季', style: TextStyle(fontSize: 12)),
-                ),
-                ButtonSegment(
-                  value: DisplayCycle.yearly,
-                  label: Text('年', style: TextStyle(fontSize: 12)),
-                ),
-              ],
-              selected: {cycle},
-              onSelectionChanged: (selected) {
-                vm.setPaymentCycle(selected.first);
-              },
-              style: ButtonStyle(
-                visualDensity: VisualDensity.compact,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
           ),
           const SizedBox(height: 12),
           // Progress bar
@@ -775,10 +710,40 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     SleepCostDashboardViewModel vm,
     SettingsViewModel settings,
   ) {
+    final theme = Theme.of(context);
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
-          final item = items[index];
+          // Header row
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle,
+                      size: 18, color: theme.colorScheme.outline),
+                  const SizedBox(width: 6),
+                  Text(
+                    '已缴清',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${settings.currency}${items.fold<double>(0, (s, i) => s + i.amount).toStringAsFixed(0)}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          final item = items[index - 1];
           return ListTile(
             leading: Icon(item.category.icon,
                 color: Colors.grey.shade400),
@@ -798,7 +763,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             onTap: () => _navigateToDetail(context, recurringCost: item),
           );
         },
-        childCount: items.length,
+        childCount: items.length + 1,
       ),
     );
   }
