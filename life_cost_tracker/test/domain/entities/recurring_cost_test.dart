@@ -5,7 +5,7 @@ import 'package:life_cost_tracker/domain/entities/cost_category.dart';
 
 void main() {
   group('RecurringCost', () {
-    test('should calculate daily cost correctly for monthly billing', () {
+    test('should calculate daily cost using actual calendar days', () {
       final cost = RecurringCost(
         name: '房租',
         amount: 3000,
@@ -15,10 +15,11 @@ void main() {
         nextDueDate: DateTime(2026, 2, 1),
       );
 
-      expect(cost.dailyCost, 100.0);
+      final daysInMonth = BillingCycle.monthly.daysInCycle;
+      expect(cost.dailyCost, 3000.0 / daysInMonth);
     });
 
-    test('should calculate daily cost correctly for yearly billing', () {
+    test('should calculate daily cost for yearly billing', () {
       final cost = RecurringCost(
         name: '保险',
         amount: 3650,
@@ -28,23 +29,25 @@ void main() {
         nextDueDate: DateTime(2027, 1, 1),
       );
 
-      expect(cost.dailyCost, 10.0);
+      final daysInYear = BillingCycle.yearly.daysInCycle;
+      expect(cost.dailyCost, 3650.0 / daysInYear);
     });
 
-    test('should calculate daily cost correctly for quarterly billing', () {
+    test('should calculate daily cost for quarterly billing', () {
       final cost = RecurringCost(
         name: '季度报刊',
-        amount: 90,
+        amount: 900,
         billingCycle: BillingCycle.quarterly,
         category: CostCategory.other,
         startDate: DateTime(2026, 1, 1),
         nextDueDate: DateTime(2026, 4, 1),
       );
 
-      expect(cost.dailyCost, 1.0);
+      final daysInQuarter = BillingCycle.quarterly.daysInCycle;
+      expect(cost.dailyCost, 900.0 / daysInQuarter);
     });
 
-    test('should calculate daily cost correctly for weekly billing', () {
+    test('should calculate daily cost for weekly billing', () {
       final cost = RecurringCost(
         name: '每周买菜',
         amount: 350,
@@ -54,6 +57,7 @@ void main() {
         nextDueDate: DateTime(2026, 1, 8),
       );
 
+      // Weekly is always 7 days
       expect(cost.dailyCost, 50.0);
     });
 
@@ -92,8 +96,10 @@ void main() {
         nextDueDate: DateTime(2026, 2, 1),
       );
 
-      expect(cost.monthlyCost, 300.0);
-      expect(cost.yearlyCost, closeTo(3650.0, 0.1));
+      final daysInMonth = BillingCycle.monthly.daysInCycle;
+      final daily = 300.0 / daysInMonth;
+      expect(cost.monthlyCost, daily * 30);
+      expect(cost.yearlyCost, daily * 365);
     });
 
     test('should support copyWith', () {

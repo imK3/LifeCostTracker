@@ -1,8 +1,8 @@
 // sleep_cost_summary.dart
 // LifeCostTracker
 // 睡后成本汇总实体
-// Sleep cost summary aggregate entity
 
+import 'dart:math' as math;
 import 'recurring_cost.dart';
 import 'installment_plan.dart';
 import 'display_cycle.dart';
@@ -10,8 +10,8 @@ import 'display_cycle.dart';
 /// Sleep cost summary - aggregate data for dashboard display
 ///
 /// 睡后成本汇总
-/// totalDailyCost 包含所有 active 项（不区分已付/未付）
-/// 已付/未付分组仅用于 UI 展示（缴费追踪）
+/// totalDailyCost 包含所有 active 项（不区分已付/未付），即燃烧率
+/// 已付/未付分组用于缴费追踪
 class SleepCostSummary {
   /// Total daily cost (ALL active items)
   /// 总日成本（所有活跃项，即燃烧率）
@@ -26,7 +26,7 @@ class SleepCostSummary {
   /// Daily cost from installment plans
   final double installmentDaily;
 
-  // --- 缴费追踪分组（UI 展示用） ---
+  // --- 缴费追踪分组 ---
 
   /// Unpaid fixed living items (待付)
   final List<RecurringCost> unpaidFixedLivingItems;
@@ -43,67 +43,87 @@ class SleepCostSummary {
   /// Active installment plans
   final List<InstallmentPlan> installmentItems;
 
-  // --- Computed properties ---
+  // --- 基础聚合 ---
 
-  /// All unpaid recurring items
   List<RecurringCost> get unpaidItems =>
       [...unpaidFixedLivingItems, ...unpaidSubscriptionItems];
 
-  /// All paid recurring items
   List<RecurringCost> get paidItems =>
       [...paidFixedLivingItems, ...paidSubscriptionItems];
 
-  /// All recurring items (paid + unpaid)
   List<RecurringCost> get allRecurringItems =>
       [...unpaidItems, ...paidItems];
 
-  /// Total number of all items
   int get totalItemCount =>
       allRecurringItems.length + installmentItems.length;
 
-  /// Number of overdue items (unpaid + past due date)
   int get overdueCount =>
       unpaidItems.where((item) => item.isOverdue).length;
 
-  /// Get display cost for a given cycle
+  // --- 燃烧率展示（按 DisplayCycle） ---
+
+  /// 燃烧率 = dailyCost × 实际天数
   double displayCost(DisplayCycle cycle) =>
-      totalDailyCost * cycle.daysMultiplier;
+      totalDailyCost * cycle.actualDays;
 
   double fixedLivingDisplayCost(DisplayCycle cycle) =>
-      fixedLivingDaily * cycle.daysMultiplier;
+      fixedLivingDaily * cycle.actualDays;
 
   double subscriptionDisplayCost(DisplayCycle cycle) =>
-      subscriptionDaily * cycle.daysMultiplier;
+      subscriptionDaily * cycle.actualDays;
 
   double installmentDisplayCost(DisplayCycle cycle) =>
-      installmentDaily * cycle.daysMultiplier;
+      installmentDaily * cycle.actualDays;
 
-  // --- 缴费追踪（按周期） ---
+  // --- 缴费追踪（按 DisplayCycle） ---
 
-  /// 已支付总额（按实际金额）
-  double get paidAmount =>
-      paidItems.fold<double>(0, (sum, item) => sum + item.amount);
+  /// 已缴金额
+  /// 已付项：dailyCost × min(账单覆盖天数, 显示周期天数)
+  /// 公式：一笔已付款覆盖了它的 billingCycle 天数，
+  ///       但在显示周期内最多只能算显示周期的天数
+  double paidAmountFor(DisplayCycle cycle) {
+    final displayDays = cycle.actualDays;
+    return paidItems.fold<double>(0, (sum, item) {
+      final coveredDays = item.billingCycle.daysInCycle;
+      return sum + item.dailyCost * math.min(coveredDays, displayDays);
+    });
+  }
 
-  /// 未支付总额（按实际金额）
-  double get unpaidAmount =>
-      unpaidItems.fold<double>(0, (sum, item) => sum + item.amount);
+  /// 待缴金额
+  /// 未付项：dailyCost × 显示周期天数
+  /// 已付项剩余部分：dailyCost × max(0, 显示周期天数 - 账单覆盖天数)
+  double unpaidAmountFor(DisplayCycle cycle) {
+    final displayDays = cycle.actualDays;
+    // Unpaid items: full display period
+    final unpaidTotal = unpaidItems.fold<double>(
+        0, (sum, item) => sum + item.dailyCost * displayDays);
+    // Paid items: remaining uncovered portion
+    final paidRemaining = paidItems.fold<double>(0, (sum, item) {
+      final coveredDays = item.billingCycle.daysInCycle;
+      final remaining = math.max(0, displayDays - coveredDays);
+      return sum + item.dailyCost * remaining;
+    });
+    return unpaidTotal + paidRemaining;
+  }
 
-  /// 应付总额（已付 + 未付）
-  double get totalDue => paidAmount + unpaidAmount;
+  /// 应付总额 = 所有 active 项 × 显示周期天数
+  double totalDueFor(DisplayCycle cycle) =>
+      totalDailyCost * cycle.actualDays;
 
   /// 支付进度 (0.0 ~ 1.0)
-  double get paymentProgress =>
-      totalDue > 0 ? paidAmount / totalDue : 0;
+  double paymentProgressFor(DisplayCycle cycle) {
+    final total = totalDueFor(cycle);
+    return total > 0 ? paidAmountFor(cycle) / total : 0;
+  }
 
-  /// Percentage of total from fixed living costs
+  // --- 占比 ---
+
   double get fixedLivingPercentage =>
       totalDailyCost > 0 ? fixedLivingDaily / totalDailyCost : 0;
 
-  /// Percentage of total from subscriptions
   double get subscriptionPercentage =>
       totalDailyCost > 0 ? subscriptionDaily / totalDailyCost : 0;
 
-  /// Percentage of total from installments
   double get installmentPercentage =>
       totalDailyCost > 0 ? installmentDaily / totalDailyCost : 0;
 

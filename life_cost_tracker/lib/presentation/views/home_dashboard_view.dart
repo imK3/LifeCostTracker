@@ -238,6 +238,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
         headline = '今天你一睁眼就欠了';
       case DisplayCycle.monthly:
         headline = '这个月你要付出';
+      case DisplayCycle.quarterly:
+        headline = '这个季度你要付出';
       case DisplayCycle.yearly:
         headline = '今年你的固定支出是';
     }
@@ -358,10 +360,11 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   ) {
     final theme = Theme.of(context);
     final summary = vm.summary;
-    final paid = summary.paidAmount;
-    final unpaid = summary.unpaidAmount;
-    final progress = summary.paymentProgress;
     final cycle = vm.paymentCycle;
+    final paid = summary.paidAmountFor(cycle);
+    final unpaid = summary.unpaidAmountFor(cycle);
+    final progress = summary.paymentProgressFor(cycle);
+    final now = DateTime.now();
 
     // Title based on cycle
     String title;
@@ -369,9 +372,12 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
       case DisplayCycle.daily:
         title = '今日缴费';
       case DisplayCycle.monthly:
-        title = '${DateTime.now().month}月缴费进度';
+        title = '${now.month}月缴费进度';
+      case DisplayCycle.quarterly:
+        final q = ((now.month - 1) ~/ 3) + 1;
+        title = '第${q}季度缴费进度';
       case DisplayCycle.yearly:
-        title = '${DateTime.now().year}年缴费进度';
+        title = '${now.year}年缴费进度';
     }
 
     return Container(
@@ -414,15 +420,19 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               segments: const [
                 ButtonSegment(
                   value: DisplayCycle.daily,
-                  label: Text('每日', style: TextStyle(fontSize: 12)),
+                  label: Text('日', style: TextStyle(fontSize: 12)),
                 ),
                 ButtonSegment(
                   value: DisplayCycle.monthly,
-                  label: Text('每月', style: TextStyle(fontSize: 12)),
+                  label: Text('月', style: TextStyle(fontSize: 12)),
+                ),
+                ButtonSegment(
+                  value: DisplayCycle.quarterly,
+                  label: Text('季', style: TextStyle(fontSize: 12)),
                 ),
                 ButtonSegment(
                   value: DisplayCycle.yearly,
-                  label: Text('每年', style: TextStyle(fontSize: 12)),
+                  label: Text('年', style: TextStyle(fontSize: 12)),
                 ),
               ],
               selected: {cycle},
@@ -465,7 +475,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '已付 ${settings.currency}${paid.toStringAsFixed(0)}',
+                      '已缴 ${settings.currency}${paid.toStringAsFixed(0)}',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.green.shade700,
@@ -491,7 +501,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '待付 ${settings.currency}${unpaid.toStringAsFixed(0)}',
+                      '待缴 ${settings.currency}${unpaid.toStringAsFixed(0)}',
                       style: TextStyle(
                         fontSize: 14,
                         color: unpaid > 0
@@ -627,7 +637,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
 
           final item = items[index - 1];
           final displayAmount =
-              item.dailyCost * vm.displayCycle.daysMultiplier;
+              item.dailyCost * vm.displayCycle.actualDays;
           final dueText = item.isOverdue
               ? '已逾期'
               : item.daysUntilDue == 0
@@ -713,7 +723,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
 
           final item = items[index - 1];
           final displayAmount =
-              item.dailyCost * vm.displayCycle.daysMultiplier;
+              item.dailyCost * vm.displayCycle.actualDays;
 
           return ListTile(
             leading: const Icon(Icons.credit_card,

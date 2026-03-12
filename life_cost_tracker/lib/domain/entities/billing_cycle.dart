@@ -37,18 +37,24 @@ enum BillingCycle {
     }
   }
 
-  /// Number of days in the billing cycle
-  /// 账单周期的天数
+  /// Actual calendar days in the current billing cycle
+  /// 当前账单周期的实际日历天数
   int get daysInCycle {
+    final now = DateTime.now();
     switch (this) {
       case BillingCycle.weekly:
         return 7;
       case BillingCycle.monthly:
-        return 30;
+        return DateTime(now.year, now.month + 1, 0).day;
       case BillingCycle.quarterly:
-        return 90;
+        final qStart = ((now.month - 1) ~/ 3) * 3 + 1;
+        return DateTime(now.year, qStart + 3, 1)
+            .difference(DateTime(now.year, qStart, 1))
+            .inDays;
       case BillingCycle.yearly:
-        return 365;
+        return DateTime(now.year + 1, 1, 1)
+            .difference(DateTime(now.year, 1, 1))
+            .inDays;
     }
   }
 

@@ -4,7 +4,7 @@ import 'package:life_cost_tracker/domain/entities/display_cycle.dart';
 
 void main() {
   group('SleepCostSummary', () {
-    test('should calculate display cost for different cycles', () {
+    test('should calculate display cost using actual calendar days', () {
       const summary = SleepCostSummary(
         totalDailyCost: 100,
         fixedLivingDaily: 60,
@@ -17,9 +17,20 @@ void main() {
         installmentItems: [],
       );
 
+      // Daily is always 1
       expect(summary.displayCost(DisplayCycle.daily), 100);
-      expect(summary.displayCost(DisplayCycle.monthly), 3000);
-      expect(summary.displayCost(DisplayCycle.yearly), 36500);
+
+      // Monthly uses actual days in current month
+      final daysInMonth = DisplayCycle.monthly.actualDays;
+      expect(summary.displayCost(DisplayCycle.monthly), 100.0 * daysInMonth);
+
+      // Quarterly uses actual days in current quarter
+      final daysInQuarter = DisplayCycle.quarterly.actualDays;
+      expect(summary.displayCost(DisplayCycle.quarterly), 100.0 * daysInQuarter);
+
+      // Yearly uses actual days in current year
+      final daysInYear = DisplayCycle.yearly.actualDays;
+      expect(summary.displayCost(DisplayCycle.yearly), 100.0 * daysInYear);
     });
 
     test('should calculate percentages correctly', () {
