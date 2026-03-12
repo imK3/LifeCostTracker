@@ -112,6 +112,8 @@ class AddCostItemViewModel extends ChangeNotifier {
 
   void setBillingCycle(BillingCycle value) {
     _billingCycle = value;
+    // Re-clamp dueDay for the new cycle's valid range
+    _dueDay = value.clampDueDay(_dueDay);
     notifyListeners();
   }
 
@@ -121,7 +123,7 @@ class AddCostItemViewModel extends ChangeNotifier {
   }
 
   void setDueDay(int value) {
-    _dueDay = value.clamp(1, 31);
+    _dueDay = _billingCycle.clampDueDay(value);
     notifyListeners();
   }
 
@@ -191,28 +193,8 @@ class AddCostItemViewModel extends ChangeNotifier {
     try {
       if (_selectedType == AddCostItemType.recurring) {
         final now = DateTime.now();
-        // Calculate next due date based on dueDay
-        DateTime nextDue;
-        if (_billingCycle == BillingCycle.yearly) {
-          // For yearly: due on the dueDay of the start month, next year if already passed
-          nextDue = DateTime(now.year, now.month, _dueDay);
-          if (nextDue.isBefore(now) || _alreadyPaid) {
-            nextDue = DateTime(now.year + 1, now.month, _dueDay);
-          }
-        } else if (_billingCycle == BillingCycle.quarterly) {
-          nextDue = DateTime(now.year, now.month, _dueDay);
-          if (nextDue.isBefore(now) || _alreadyPaid) {
-            nextDue = DateTime(now.year, now.month + 3, _dueDay);
-          }
-        } else if (_billingCycle == BillingCycle.monthly) {
-          nextDue = DateTime(now.year, now.month, _dueDay);
-          if (nextDue.isBefore(now) || _alreadyPaid) {
-            nextDue = DateTime(now.year, now.month + 1, _dueDay);
-          }
-        } else {
-          // weekly
-          nextDue = now.add(const Duration(days: 7));
-        }
+        // Calculate next due date based on billingCycle and dueDay
+        final nextDue = _calculateNextDueDate(now);
 
         final cost = RecurringCost(
           name: _name.trim(),
@@ -244,6 +226,46 @@ class AddCostItemViewModel extends ChangeNotifier {
     } finally {
       _isSaving = false;
       notifyListeners();
+    }
+  }
+
+  /// Calculate next due date based on billing cycle and dueDay input
+  /// 根据账单周期和到期日输入计算下一个到期日
+  ///
+  /// dueDay 的含义随 billingCycle 变化：
+  /// - weekly: 周几（1-7）
+  /// - monthly/quarterly: 几号（1-31）
+  /// - yearly: 几月（1-12）
+  DateTime _calculateNextDueDate(DateTime now) {
+    switch (_billingCycle) {
+      case BillingCycle.weekly:
+        // dueDay = 1(周一) ~ 7(周日)
+        final currentWeekday = now.weekday; // 1=Mon, 7=Sun
+        var daysUntil = _dueDay - currentWeekday;
+        if (daysUntil <= 0 || _alreadyPaid) daysUntil += 7;
+        return DateTime(now.year, now.month, now.day + daysUntil);
+
+      case BillingCycle.monthly:
+        var nextDue = DateTime(now.year, now.month, _dueDay);
+        if (nextDue.isBefore(now) || _alreadyPaid) {
+          nextDue = DateTime(now.year, now.month + 1, _dueDay);
+        }
+        return nextDue;
+
+      case BillingCycle.quarterly:
+        var nextDue = DateTime(now.year, now.month, _dueDay);
+        if (nextDue.isBefore(now) || _alreadyPaid) {
+          nextDue = DateTime(now.year, now.month + 3, _dueDay);
+        }
+        return nextDue;
+
+      case BillingCycle.yearly:
+        // dueDay = month (1-12), pay on the 1st of that month
+        var nextDue = DateTime(now.year, _dueDay, 1);
+        if (nextDue.isBefore(now) || _alreadyPaid) {
+          nextDue = DateTime(now.year + 1, _dueDay, 1);
+        }
+        return nextDue;
     }
   }
 

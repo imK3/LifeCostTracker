@@ -150,14 +150,13 @@ class AddCostItemSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Due day
+                      // Due day (adapts to billing cycle)
                       TextField(
                         decoration: InputDecoration(
-                          labelText: '每月到期日',
-                          hintText: '每月几号付款',
+                          labelText: vm.billingCycle.dueDateLabel,
+                          hintText: vm.billingCycle.dueDateHint,
                           border: const OutlineInputBorder(),
-                          suffixText: '号',
-                          helperText: '例如：1号、15号',
+                          suffixText: vm.billingCycle.dueDateSuffix,
                         ),
                         keyboardType: TextInputType.number,
                         onChanged: (v) =>

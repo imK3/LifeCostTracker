@@ -8,59 +8,62 @@ import 'installment_plan.dart';
 import 'display_cycle.dart';
 
 /// Sleep cost summary - aggregate data for dashboard display
-/// 睡后成本汇总 - Dashboard 展示用的聚合数据
+///
+/// 睡后成本汇总
+/// totalDailyCost 包含所有 active 项（不区分已付/未付）
+/// 已付/未付分组仅用于 UI 展示（缴费追踪）
 class SleepCostSummary {
-  /// Total daily cost (only unpaid items)
-  /// 总日成本（仅未支付项）
+  /// Total daily cost (ALL active items)
+  /// 总日成本（所有活跃项，即燃烧率）
   final double totalDailyCost;
 
-  /// Daily cost from unpaid fixed living expenses
+  /// Daily cost from fixed living expenses
   final double fixedLivingDaily;
 
-  /// Daily cost from unpaid subscriptions
+  /// Daily cost from subscriptions
   final double subscriptionDaily;
 
   /// Daily cost from installment plans
   final double installmentDaily;
 
-  /// Unpaid fixed living items (计入睡后成本)
-  final List<RecurringCost> fixedLivingItems;
+  // --- 缴费追踪分组（UI 展示用） ---
 
-  /// Unpaid subscription items (计入睡后成本)
-  final List<RecurringCost> subscriptionItems;
+  /// Unpaid fixed living items (待付)
+  final List<RecurringCost> unpaidFixedLivingItems;
+
+  /// Unpaid subscription items (待付)
+  final List<RecurringCost> unpaidSubscriptionItems;
+
+  /// Paid fixed living items (本期已付)
+  final List<RecurringCost> paidFixedLivingItems;
+
+  /// Paid subscription items (本期已付)
+  final List<RecurringCost> paidSubscriptionItems;
 
   /// Active installment plans
   final List<InstallmentPlan> installmentItems;
 
-  /// Already paid fixed living items (本期已付，不计入睡后成本)
-  final List<RecurringCost> paidFixedLivingItems;
+  // --- Computed properties ---
 
-  /// Already paid subscription items (本期已付，不计入睡后成本)
-  final List<RecurringCost> paidSubscriptionItems;
+  /// All unpaid recurring items
+  List<RecurringCost> get unpaidItems =>
+      [...unpaidFixedLivingItems, ...unpaidSubscriptionItems];
 
-  /// Total number of unpaid cost items
-  int get unpaidItemCount =>
-      fixedLivingItems.length +
-      subscriptionItems.length +
-      installmentItems.length;
+  /// All paid recurring items
+  List<RecurringCost> get paidItems =>
+      [...paidFixedLivingItems, ...paidSubscriptionItems];
 
-  /// Total number of all items (paid + unpaid)
+  /// All recurring items (paid + unpaid)
+  List<RecurringCost> get allRecurringItems =>
+      [...unpaidItems, ...paidItems];
+
+  /// Total number of all items
   int get totalItemCount =>
-      unpaidItemCount +
-      paidFixedLivingItems.length +
-      paidSubscriptionItems.length;
+      allRecurringItems.length + installmentItems.length;
 
-  /// Number of overdue items
-  int get overdueCount {
-    int count = 0;
-    for (final item in fixedLivingItems) {
-      if (item.isOverdue) count++;
-    }
-    for (final item in subscriptionItems) {
-      if (item.isOverdue) count++;
-    }
-    return count;
-  }
+  /// Number of overdue items (unpaid + past due date)
+  int get overdueCount =>
+      unpaidItems.where((item) => item.isOverdue).length;
 
   /// Get display cost for a given cycle
   double displayCost(DisplayCycle cycle) =>
@@ -92,11 +95,11 @@ class SleepCostSummary {
     required this.fixedLivingDaily,
     required this.subscriptionDaily,
     required this.installmentDaily,
-    required this.fixedLivingItems,
-    required this.subscriptionItems,
+    required this.unpaidFixedLivingItems,
+    required this.unpaidSubscriptionItems,
+    required this.paidFixedLivingItems,
+    required this.paidSubscriptionItems,
     required this.installmentItems,
-    this.paidFixedLivingItems = const [],
-    this.paidSubscriptionItems = const [],
   });
 
   static const empty = SleepCostSummary(
@@ -104,8 +107,10 @@ class SleepCostSummary {
     fixedLivingDaily: 0,
     subscriptionDaily: 0,
     installmentDaily: 0,
-    fixedLivingItems: [],
-    subscriptionItems: [],
+    unpaidFixedLivingItems: [],
+    unpaidSubscriptionItems: [],
+    paidFixedLivingItems: [],
+    paidSubscriptionItems: [],
     installmentItems: [],
   );
 }

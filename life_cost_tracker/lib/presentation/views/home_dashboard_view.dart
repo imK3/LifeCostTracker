@@ -106,27 +106,27 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                   ),
 
                 // Fixed Living Costs Section
-                if (vm.summary.fixedLivingItems.isNotEmpty)
+                if (vm.summary.unpaidFixedLivingItems.isNotEmpty)
                   _buildCostSection(
                     context,
                     title: '固定生活成本',
                     subtitle:
                         '${settings.currency}${vm.fixedLivingDisplayCost.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
                     color: const Color(0xFF4CAF50),
-                    items: vm.summary.fixedLivingItems,
+                    items: vm.summary.unpaidFixedLivingItems,
                     vm: vm,
                     settings: settings,
                   ),
 
                 // Subscription Costs Section
-                if (vm.summary.subscriptionItems.isNotEmpty)
+                if (vm.summary.unpaidSubscriptionItems.isNotEmpty)
                   _buildCostSection(
                     context,
                     title: '订阅费用',
                     subtitle:
                         '${settings.currency}${vm.subscriptionDisplayCost.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
                     color: const Color(0xFF2196F3),
-                    items: vm.summary.subscriptionItems,
+                    items: vm.summary.unpaidSubscriptionItems,
                     vm: vm,
                     settings: settings,
                   ),

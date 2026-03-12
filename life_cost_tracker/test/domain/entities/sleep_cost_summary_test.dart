@@ -10,8 +10,10 @@ void main() {
         fixedLivingDaily: 60,
         subscriptionDaily: 25,
         installmentDaily: 15,
-        fixedLivingItems: [],
-        subscriptionItems: [],
+        unpaidFixedLivingItems: [],
+        unpaidSubscriptionItems: [],
+        paidFixedLivingItems: [],
+        paidSubscriptionItems: [],
         installmentItems: [],
       );
 
@@ -26,8 +28,10 @@ void main() {
         fixedLivingDaily: 60,
         subscriptionDaily: 25,
         installmentDaily: 15,
-        fixedLivingItems: [],
-        subscriptionItems: [],
+        unpaidFixedLivingItems: [],
+        unpaidSubscriptionItems: [],
+        paidFixedLivingItems: [],
+        paidSubscriptionItems: [],
         installmentItems: [],
       );
 

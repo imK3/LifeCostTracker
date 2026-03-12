@@ -8,8 +8,14 @@ import '../entities/sleep_cost_summary.dart';
 import '../repositories/recurring_cost_repository.dart';
 import '../repositories/installment_plan_repository.dart';
 
-/// Calculate the total "sleep cost" - only unpaid items count
-/// 计算总"睡后成本" - 只有未支付的项才算
+/// Calculate the total "sleep cost" — your daily burn rate
+///
+/// 睡后成本 = 你的生活燃烧率
+/// 所有 active 的周期性成本都计入，不管本期是否已支付。
+/// 因为房租付了这个月，下个月还要付；保险付了今年，明年还要续。
+/// 只有 isActive=false（退租、取消订阅）才不算。
+///
+/// 已付/未付状态仅用于 UI 展示（缴费追踪、到期提醒）。
 class CalculateSleepCostUseCase
     implements BaseUseCase<SleepCostSummary, NoParams> {
   final RecurringCostRepository recurringCostRepository;
@@ -23,33 +29,32 @@ class CalculateSleepCostUseCase
   @override
   Future<SleepCostSummary> call(NoParams params) async {
     final recurringCosts = await recurringCostRepository.getRecurringCosts();
-    final installments = await installmentPlanRepository.getInstallmentPlans();
+    final installments =
+        await installmentPlanRepository.getInstallmentPlans();
 
-    // Filter active items
+    // Only active items count
     final activeRecurring =
         recurringCosts.where((c) => c.isActive).toList();
     final activeInstallments =
         installments.where((i) => !i.isCompleted).toList();
 
-    // Split into paid and unpaid
-    final unpaidRecurring =
-        activeRecurring.where((c) => !c.isPaidForCurrentPeriod).toList();
-    final paidRecurring =
-        activeRecurring.where((c) => c.isPaidForCurrentPeriod).toList();
-
-    // Split unpaid by category
+    // Split by category (for display)
     final fixedLivingItems =
-        unpaidRecurring.where((c) => c.isFixedLiving).toList();
+        activeRecurring.where((c) => c.isFixedLiving).toList();
     final subscriptionItems =
-        unpaidRecurring.where((c) => c.isSubscription).toList();
+        activeRecurring.where((c) => c.isSubscription).toList();
 
-    // Split paid by category
-    final paidFixedLivingItems =
-        paidRecurring.where((c) => c.isFixedLiving).toList();
-    final paidSubscriptionItems =
-        paidRecurring.where((c) => c.isSubscription).toList();
+    // Split by payment status (for UI tracking)
+    final unpaidFixedLiving =
+        fixedLivingItems.where((c) => !c.isPaidForCurrentPeriod).toList();
+    final paidFixedLiving =
+        fixedLivingItems.where((c) => c.isPaidForCurrentPeriod).toList();
+    final unpaidSubscription =
+        subscriptionItems.where((c) => !c.isPaidForCurrentPeriod).toList();
+    final paidSubscription =
+        subscriptionItems.where((c) => c.isPaidForCurrentPeriod).toList();
 
-    // Only unpaid items count toward sleep cost
+    // ALL active items count toward sleep cost (burn rate)
     final fixedLivingDaily =
         fixedLivingItems.fold<double>(0, (sum, c) => sum + c.dailyCost);
     final subscriptionDaily =
@@ -62,11 +67,11 @@ class CalculateSleepCostUseCase
       fixedLivingDaily: fixedLivingDaily,
       subscriptionDaily: subscriptionDaily,
       installmentDaily: installmentDaily,
-      fixedLivingItems: fixedLivingItems,
-      subscriptionItems: subscriptionItems,
+      unpaidFixedLivingItems: unpaidFixedLiving,
+      unpaidSubscriptionItems: unpaidSubscription,
+      paidFixedLivingItems: paidFixedLiving,
+      paidSubscriptionItems: paidSubscription,
       installmentItems: activeInstallments,
-      paidFixedLivingItems: paidFixedLivingItems,
-      paidSubscriptionItems: paidSubscriptionItems,
     );
   }
 }
