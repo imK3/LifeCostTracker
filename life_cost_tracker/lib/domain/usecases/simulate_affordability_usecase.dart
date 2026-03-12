@@ -5,7 +5,6 @@
 
 import 'base_usecase.dart';
 import '../entities/affordability_item.dart';
-import '../entities/sleep_cost_summary.dart';
 import 'calculate_sleep_cost_usecase.dart';
 
 /// Result of an affordability simulation

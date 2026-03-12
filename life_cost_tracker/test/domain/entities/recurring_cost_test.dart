@@ -12,6 +12,7 @@ void main() {
         billingCycle: BillingCycle.monthly,
         category: CostCategory.rent,
         startDate: DateTime(2026, 1, 1),
+        nextDueDate: DateTime(2026, 2, 1),
       );
 
       expect(cost.dailyCost, 100.0);
@@ -24,6 +25,7 @@ void main() {
         billingCycle: BillingCycle.yearly,
         category: CostCategory.insurance,
         startDate: DateTime(2026, 1, 1),
+        nextDueDate: DateTime(2027, 1, 1),
       );
 
       expect(cost.dailyCost, 10.0);
@@ -36,6 +38,7 @@ void main() {
         billingCycle: BillingCycle.quarterly,
         category: CostCategory.other,
         startDate: DateTime(2026, 1, 1),
+        nextDueDate: DateTime(2026, 4, 1),
       );
 
       expect(cost.dailyCost, 1.0);
@@ -48,6 +51,7 @@ void main() {
         billingCycle: BillingCycle.weekly,
         category: CostCategory.groceries,
         startDate: DateTime(2026, 1, 1),
+        nextDueDate: DateTime(2026, 1, 8),
       );
 
       expect(cost.dailyCost, 50.0);
@@ -60,6 +64,7 @@ void main() {
         billingCycle: BillingCycle.monthly,
         category: CostCategory.rent,
         startDate: DateTime(2026, 1, 1),
+        nextDueDate: DateTime(2026, 2, 1),
       );
 
       final claude = RecurringCost(
@@ -68,6 +73,7 @@ void main() {
         billingCycle: BillingCycle.monthly,
         category: CostCategory.productivity,
         startDate: DateTime(2026, 1, 1),
+        nextDueDate: DateTime(2026, 2, 1),
       );
 
       expect(rent.isFixedLiving, true);
@@ -83,6 +89,7 @@ void main() {
         billingCycle: BillingCycle.monthly,
         category: CostCategory.parking,
         startDate: DateTime(2026, 1, 1),
+        nextDueDate: DateTime(2026, 2, 1),
       );
 
       expect(cost.monthlyCost, 300.0);
@@ -96,6 +103,7 @@ void main() {
         billingCycle: BillingCycle.monthly,
         category: CostCategory.rent,
         startDate: DateTime(2026, 1, 1),
+        nextDueDate: DateTime(2026, 2, 1),
       );
 
       final updated = cost.copyWith(amount: 3500, isActive: false);
@@ -114,6 +122,7 @@ void main() {
         billingCycle: BillingCycle.monthly,
         category: CostCategory.utilities,
         startDate: DateTime(2026, 3, 1),
+        nextDueDate: DateTime(2026, 4, 1),
         notes: '含燃气费',
       );
 
@@ -126,6 +135,26 @@ void main() {
       expect(restored.billingCycle, BillingCycle.monthly);
       expect(restored.category, CostCategory.utilities);
       expect(restored.notes, '含燃气费');
+    });
+
+    test('should track payment status correctly', () {
+      final unpaid = RecurringCost(
+        name: '房租',
+        amount: 3000,
+        billingCycle: BillingCycle.monthly,
+        category: CostCategory.rent,
+        startDate: DateTime(2026, 1, 1),
+        nextDueDate: DateTime(2026, 2, 1),
+      );
+
+      expect(unpaid.isPaidForCurrentPeriod, false);
+
+      final paid = unpaid.markAsPaid();
+      expect(paid.isPaidForCurrentPeriod, true);
+
+      final advanced = paid.advanceToNextPeriod();
+      expect(advanced.isPaidForCurrentPeriod, false);
+      expect(advanced.nextDueDate, DateTime(2026, 3, 1));
     });
   });
 }

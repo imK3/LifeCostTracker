@@ -21,6 +21,8 @@ class RecurringCostAdapter extends TypeAdapter<RecurringCost> {
     final category = CostCategory.values[reader.readInt()];
     final startDate = DateTime.parse(reader.readString());
     final endDateStr = reader.readString();
+    final nextDueDate = DateTime.parse(reader.readString());
+    final isPaidForCurrentPeriod = reader.readBool();
     final isActive = reader.readBool();
     final notes = reader.readString();
 
@@ -32,6 +34,8 @@ class RecurringCostAdapter extends TypeAdapter<RecurringCost> {
       category: category,
       startDate: startDate,
       endDate: endDateStr.isNotEmpty ? DateTime.parse(endDateStr) : null,
+      nextDueDate: nextDueDate,
+      isPaidForCurrentPeriod: isPaidForCurrentPeriod,
       isActive: isActive,
       notes: notes.isNotEmpty ? notes : null,
     );
@@ -46,6 +50,8 @@ class RecurringCostAdapter extends TypeAdapter<RecurringCost> {
     writer.writeInt(obj.category.index);
     writer.writeString(obj.startDate.toIso8601String());
     writer.writeString(obj.endDate?.toIso8601String() ?? '');
+    writer.writeString(obj.nextDueDate.toIso8601String());
+    writer.writeBool(obj.isPaidForCurrentPeriod);
     writer.writeBool(obj.isActive);
     writer.writeString(obj.notes ?? '');
   }

@@ -43,6 +43,8 @@ class AddCostItemViewModel extends ChangeNotifier {
   double _amount = 0;
   BillingCycle _billingCycle = BillingCycle.monthly;
   CostCategory _category = CostCategory.other;
+  int _dueDay = 1; // 每月几号到期
+  bool _alreadyPaid = false; // 本期是否已支付
 
   // State - installment plan fields
   double _totalAmount = 0;
@@ -62,6 +64,8 @@ class AddCostItemViewModel extends ChangeNotifier {
   double get amount => _amount;
   BillingCycle get billingCycle => _billingCycle;
   CostCategory get category => _category;
+  int get dueDay => _dueDay;
+  bool get alreadyPaid => _alreadyPaid;
   double get totalAmount => _totalAmount;
   int get totalPeriods => _totalPeriods;
   double get monthlyPayment => _monthlyPayment;
@@ -113,6 +117,16 @@ class AddCostItemViewModel extends ChangeNotifier {
 
   void setCategory(CostCategory value) {
     _category = value;
+    notifyListeners();
+  }
+
+  void setDueDay(int value) {
+    _dueDay = value.clamp(1, 31);
+    notifyListeners();
+  }
+
+  void setAlreadyPaid(bool value) {
+    _alreadyPaid = value;
     notifyListeners();
   }
 
@@ -176,12 +190,38 @@ class AddCostItemViewModel extends ChangeNotifier {
 
     try {
       if (_selectedType == AddCostItemType.recurring) {
+        final now = DateTime.now();
+        // Calculate next due date based on dueDay
+        DateTime nextDue;
+        if (_billingCycle == BillingCycle.yearly) {
+          // For yearly: due on the dueDay of the start month, next year if already passed
+          nextDue = DateTime(now.year, now.month, _dueDay);
+          if (nextDue.isBefore(now) || _alreadyPaid) {
+            nextDue = DateTime(now.year + 1, now.month, _dueDay);
+          }
+        } else if (_billingCycle == BillingCycle.quarterly) {
+          nextDue = DateTime(now.year, now.month, _dueDay);
+          if (nextDue.isBefore(now) || _alreadyPaid) {
+            nextDue = DateTime(now.year, now.month + 3, _dueDay);
+          }
+        } else if (_billingCycle == BillingCycle.monthly) {
+          nextDue = DateTime(now.year, now.month, _dueDay);
+          if (nextDue.isBefore(now) || _alreadyPaid) {
+            nextDue = DateTime(now.year, now.month + 1, _dueDay);
+          }
+        } else {
+          // weekly
+          nextDue = now.add(const Duration(days: 7));
+        }
+
         final cost = RecurringCost(
           name: _name.trim(),
           amount: _amount,
           billingCycle: _billingCycle,
           category: _category,
-          startDate: DateTime.now(),
+          startDate: now,
+          nextDueDate: nextDue,
+          isPaidForCurrentPeriod: _alreadyPaid,
           notes: _notes,
         );
         await _addRecurringCostUseCase.call(cost);
@@ -215,6 +255,8 @@ class AddCostItemViewModel extends ChangeNotifier {
     _amount = 0;
     _billingCycle = BillingCycle.monthly;
     _category = CostCategory.other;
+    _dueDay = 1;
+    _alreadyPaid = false;
     _totalAmount = 0;
     _totalPeriods = 12;
     _monthlyPayment = 0;

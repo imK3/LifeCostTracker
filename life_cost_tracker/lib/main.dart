@@ -66,8 +66,6 @@ void main() async {
   // Create use case instances
   final addRecurringCostUseCase =
       AddRecurringCostUseCase(repository: recurringCostRepository);
-  final getRecurringCostsUseCase =
-      GetRecurringCostsUseCase(repository: recurringCostRepository);
   final updateRecurringCostUseCase =
       UpdateRecurringCostUseCase(repository: recurringCostRepository);
   final deleteRecurringCostUseCase =
@@ -75,8 +73,6 @@ void main() async {
 
   final addInstallmentPlanUseCase =
       AddInstallmentPlanUseCase(repository: installmentPlanRepository);
-  final getInstallmentPlansUseCase =
-      GetInstallmentPlansUseCase(repository: installmentPlanRepository);
   final updateInstallmentPlanUseCase =
       UpdateInstallmentPlanUseCase(repository: installmentPlanRepository);
   final deleteInstallmentPlanUseCase =

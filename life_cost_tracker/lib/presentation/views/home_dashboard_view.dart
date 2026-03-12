@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/sleep_cost_dashboard_view_model.dart';
+import '../viewmodels/cost_item_detail_view_model.dart';
 import '../viewmodels/settings_view_model.dart';
 import '../../domain/entities/display_cycle.dart';
 import '../../domain/entities/recurring_cost.dart';
@@ -162,6 +163,42 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                         ],
                       ),
                     ),
+                  ),
+
+                // Paid items section
+                if (vm.summary.paidFixedLivingItems.isNotEmpty ||
+                    vm.summary.paidSubscriptionItems.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.check_circle,
+                              size: 18, color: theme.colorScheme.outline),
+                          const SizedBox(width: 6),
+                          Text(
+                            '本期已支付',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.outline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                if (vm.summary.paidFixedLivingItems.isNotEmpty ||
+                    vm.summary.paidSubscriptionItems.isNotEmpty)
+                  _buildPaidItemsList(
+                    context,
+                    [
+                      ...vm.summary.paidFixedLivingItems,
+                      ...vm.summary.paidSubscriptionItems,
+                    ],
+                    vm,
+                    settings,
                   ),
 
                 // Bottom padding
@@ -408,17 +445,44 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
           final item = items[index - 1];
           final displayAmount =
               item.dailyCost * vm.displayCycle.daysMultiplier;
+          final dueText = item.isOverdue
+              ? '已逾期'
+              : item.daysUntilDue == 0
+                  ? '今天到期'
+                  : '${item.daysUntilDue}天后到期';
 
-          return ListTile(
-            leading: Icon(item.category.icon, color: color),
-            title: Text(item.name),
-            subtitle: Text(
-                '${settings.currency}${item.amount.toStringAsFixed(0)}/${item.billingCycle.displayName}'),
-            trailing: Text(
-              '${settings.currency}${displayAmount.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+          return Dismissible(
+            key: Key('pay_${item.id}'),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              color: Colors.green,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(Icons.check, color: Colors.white),
+                  SizedBox(width: 4),
+                  Text('标记已付',
+                      style: TextStyle(color: Colors.white)),
+                ],
+              ),
             ),
-            onTap: () => _navigateToDetail(context, recurringCost: item),
+            confirmDismiss: (direction) async {
+              await _markAsPaid(context, item);
+              return false;
+            },
+            child: ListTile(
+              leading: Icon(item.category.icon, color: color),
+              title: Text(item.name),
+              subtitle: Text(
+                  '${settings.currency}${item.amount.toStringAsFixed(0)}/${item.billingCycle.displayName} · $dueText'),
+              trailing: Text(
+                '${settings.currency}${displayAmount.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              onTap: () => _navigateToDetail(context, recurringCost: item),
+            ),
           );
         },
         childCount: items.length + 1,
@@ -510,6 +574,55 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     ).then((_) {
       context.read<SleepCostDashboardViewModel>().loadDashboardData();
     });
+  }
+
+  SliverList _buildPaidItemsList(
+    BuildContext context,
+    List<RecurringCost> items,
+    SleepCostDashboardViewModel vm,
+    SettingsViewModel settings,
+  ) {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final item = items[index];
+          return ListTile(
+            leading: Icon(item.category.icon,
+                color: Colors.grey.shade400),
+            title: Text(
+              item.name,
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                decoration: TextDecoration.lineThrough,
+              ),
+            ),
+            subtitle: Text(
+              '${settings.currency}${item.amount.toStringAsFixed(0)}/${item.billingCycle.displayName} · 下次: ${item.nextDueDate.month}/${item.nextDueDate.day}',
+              style: TextStyle(color: Colors.grey.shade400),
+            ),
+            trailing: Icon(Icons.check_circle,
+                color: Colors.green.shade300, size: 20),
+            onTap: () => _navigateToDetail(context, recurringCost: item),
+          );
+        },
+        childCount: items.length,
+      ),
+    );
+  }
+
+  Future<void> _markAsPaid(BuildContext context, RecurringCost item) async {
+    final detailVm = context.read<CostItemDetailViewModel>();
+    final paid = item.payAndAdvance();
+    await detailVm.updateRecurringCost(paid);
+    if (context.mounted) {
+      context.read<SleepCostDashboardViewModel>().loadDashboardData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('「${item.name}」已标记为已支付'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _navigateToDetail(

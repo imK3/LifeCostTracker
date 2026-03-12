@@ -108,7 +108,7 @@ class AddCostItemSheet extends StatelessWidget {
 
                       // Billing cycle
                       DropdownButtonFormField<BillingCycle>(
-                        value: vm.billingCycle,
+                        initialValue: vm.billingCycle,
                         decoration: const InputDecoration(
                           labelText: '账单周期',
                           border: OutlineInputBorder(),
@@ -127,7 +127,7 @@ class AddCostItemSheet extends StatelessWidget {
 
                       // Category
                       DropdownButtonFormField<CostCategory>(
-                        value: vm.category,
+                        initialValue: vm.category,
                         decoration: const InputDecoration(
                           labelText: '分类',
                           border: OutlineInputBorder(),
@@ -147,6 +147,31 @@ class AddCostItemSheet extends StatelessWidget {
                         onChanged: (v) {
                           if (v != null) vm.setCategory(v);
                         },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Due day
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: '每月到期日',
+                          hintText: '每月几号付款',
+                          border: const OutlineInputBorder(),
+                          suffixText: '号',
+                          helperText: '例如：1号、15号',
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) =>
+                            vm.setDueDay(int.tryParse(v) ?? 1),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Already paid toggle
+                      SwitchListTile(
+                        title: const Text('本期已支付'),
+                        subtitle: const Text('如果这个月/这期已经付过了'),
+                        value: vm.alreadyPaid,
+                        onChanged: vm.setAlreadyPaid,
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ],
 
