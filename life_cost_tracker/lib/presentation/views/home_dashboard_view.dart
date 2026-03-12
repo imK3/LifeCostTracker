@@ -83,6 +83,12 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                   child: _buildHeroSection(context, vm, settings),
                 ),
 
+                // Monthly payment tracking card
+                if (vm.summary.totalItemCount > 0)
+                  SliverToBoxAdapter(
+                    child: _buildMonthlyPaymentCard(context, vm, settings),
+                  ),
+
                 // Pie Chart
                 if (vm.summary.totalDailyCost > 0)
                   SliverToBoxAdapter(
@@ -342,6 +348,143 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMonthlyPaymentCard(
+    BuildContext context,
+    SleepCostDashboardViewModel vm,
+    SettingsViewModel settings,
+  ) {
+    final theme = Theme.of(context);
+    final summary = vm.summary;
+    final paid = summary.monthlyPaidAmount;
+    final unpaid = summary.monthlyUnpaidAmount;
+    final progress = summary.monthlyPaymentProgress;
+    final now = DateTime.now();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.calendar_month,
+                  size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 6),
+              Text(
+                '${now.month}月缴费进度',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${summary.paidItems.length}/${summary.allRecurringItems.length} 项已付',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                progress >= 1.0 ? Colors.green : theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Paid / Unpaid amounts
+          Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '已付 ${settings.currency}${paid.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: unpaid > 0
+                            ? Colors.orange.shade600
+                            : Colors.grey.shade300,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '待付 ${settings.currency}${unpaid.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: unpaid > 0
+                            ? Colors.orange.shade700
+                            : Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (summary.overdueCount > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.warning_amber_rounded,
+                    size: 16, color: Colors.red.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  '${summary.overdueCount} 项已逾期',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.red.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 

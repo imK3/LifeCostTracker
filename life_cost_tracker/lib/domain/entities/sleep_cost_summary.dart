@@ -78,6 +78,29 @@ class SleepCostSummary {
   double installmentDisplayCost(DisplayCycle cycle) =>
       installmentDaily * cycle.daysMultiplier;
 
+  // --- 本月收支追踪 ---
+
+  /// 本月已支付总额（周期性 + 分期）
+  /// 只统计本月到期且已付的周期性项，以及分期的月供
+  double get monthlyPaidAmount {
+    return paidItems.fold<double>(0, (sum, item) => sum + item.amount);
+  }
+
+  /// 本月剩余未支付总额
+  /// 统计本月内到期但未付的周期性项
+  double get monthlyUnpaidAmount {
+    return unpaidItems.fold<double>(0, (sum, item) {
+      return sum + item.amount;
+    });
+  }
+
+  /// 本月应付总额（已付 + 未付）
+  double get monthlyTotalDue => monthlyPaidAmount + monthlyUnpaidAmount;
+
+  /// 本月支付进度 (0.0 ~ 1.0)
+  double get monthlyPaymentProgress =>
+      monthlyTotalDue > 0 ? monthlyPaidAmount / monthlyTotalDue : 0;
+
   /// Percentage of total from fixed living costs
   double get fixedLivingPercentage =>
       totalDailyCost > 0 ? fixedLivingDaily / totalDailyCost : 0;
