@@ -1,0 +1,348 @@
+// add_cost_item_sheet.dart
+// LifeCostTracker
+// 添加成本项底部弹窗
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/add_cost_item_view_model.dart';
+import '../../domain/entities/billing_cycle.dart';
+import '../../domain/entities/cost_category.dart';
+
+class AddCostItemSheet extends StatelessWidget {
+  const AddCostItemSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AddCostItemViewModel>(
+      builder: (context, vm, child) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+
+                  // Title
+                  Text(
+                    vm.currentStep == 0 ? '添加成本项' : '填写详情',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Step 0: Select type
+                  if (vm.currentStep == 0) ...[
+                    _buildTypeCard(
+                      context,
+                      icon: Icons.repeat,
+                      title: '周期性支出',
+                      description: '房租、水电、伙食、订阅、话费等固定周期支出',
+                      onTap: () =>
+                          vm.selectType(AddCostItemType.recurring),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTypeCard(
+                      context,
+                      icon: Icons.credit_card,
+                      title: '分期承诺',
+                      description: '手机分期、贷款等有固定期数的还款计划',
+                      onTap: () =>
+                          vm.selectType(AddCostItemType.installment),
+                    ),
+                  ],
+
+                  // Step 1: Fill details
+                  if (vm.currentStep == 1) ...[
+                    // Back button
+                    TextButton.icon(
+                      onPressed: vm.goBack,
+                      icon: const Icon(Icons.arrow_back, size: 18),
+                      label: const Text('返回'),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Name field
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: '名称',
+                        hintText: '例如：房租、Claude Code Max',
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: vm.setName,
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (vm.selectedType == AddCostItemType.recurring) ...[
+                      // Amount field
+                      TextField(
+                        decoration: const InputDecoration(
+                          labelText: '金额',
+                          hintText: '每期金额',
+                          border: OutlineInputBorder(),
+                          prefixText: '¥ ',
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) =>
+                            vm.setAmount(double.tryParse(v) ?? 0),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Billing cycle
+                      DropdownButtonFormField<BillingCycle>(
+                        value: vm.billingCycle,
+                        decoration: const InputDecoration(
+                          labelText: '账单周期',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: BillingCycle.values
+                            .map((c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c.displayName),
+                                ))
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) vm.setBillingCycle(v);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Category
+                      DropdownButtonFormField<CostCategory>(
+                        value: vm.category,
+                        decoration: const InputDecoration(
+                          labelText: '分类',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: CostCategory.values
+                            .map((c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Row(
+                                    children: [
+                                      Icon(c.icon, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text(c.displayName),
+                                    ],
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) vm.setCategory(v);
+                        },
+                      ),
+                    ],
+
+                    if (vm.selectedType ==
+                        AddCostItemType.installment) ...[
+                      // Total amount
+                      TextField(
+                        decoration: const InputDecoration(
+                          labelText: '总金额',
+                          hintText: '商品总价',
+                          border: OutlineInputBorder(),
+                          prefixText: '¥ ',
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) =>
+                            vm.setTotalAmount(double.tryParse(v) ?? 0),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Total periods
+                      TextField(
+                        decoration: const InputDecoration(
+                          labelText: '分期期数',
+                          hintText: '例如：12',
+                          border: OutlineInputBorder(),
+                          suffixText: '期',
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) =>
+                            vm.setTotalPeriods(int.tryParse(v) ?? 0),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Monthly payment (auto-calculated)
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: '每月还款',
+                          hintText: vm.monthlyPayment > 0
+                              ? vm.monthlyPayment.toStringAsFixed(2)
+                              : '自动计算或手动输入',
+                          border: const OutlineInputBorder(),
+                          prefixText: '¥ ',
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) => vm.setMonthlyPayment(
+                            double.tryParse(v) ?? 0),
+                      ),
+                    ],
+
+                    const SizedBox(height: 16),
+
+                    // Notes
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: '备注（可选）',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                      onChanged: (v) => vm.setNotes(v.isEmpty ? null : v),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Daily cost preview
+                    if (vm.previewDailyCost > 0)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primaryContainer
+                              .withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('每日成本增加 '),
+                            Text(
+                              '¥${vm.previewDailyCost.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    // Validation errors
+                    if (vm.validationErrors.isNotEmpty)
+                      ...vm.validationErrors.map((e) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(e,
+                                style:
+                                    const TextStyle(color: Colors.red)),
+                          )),
+
+                    // Save button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton(
+                        onPressed: vm.canSave && !vm.isSaving
+                            ? () async {
+                                final success = await vm.save();
+                                if (success && context.mounted) {
+                                  vm.reset();
+                                  Navigator.of(context).pop();
+                                }
+                              }
+                            : null,
+                        child: vm.isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2),
+                              )
+                            : const Text('保存'),
+                      ),
+                    ),
+
+                    if (vm.errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(vm.errorMessage!,
+                            style: const TextStyle(color: Colors.red)),
+                      ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTypeCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon,
+                    size: 28, color: theme.colorScheme.primary),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(description,
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: theme.colorScheme.outline)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right,
+                  color: theme.colorScheme.outline),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

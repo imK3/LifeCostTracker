@@ -11,7 +11,7 @@ import '../../domain/entities/billing_cycle.dart';
 /// 账单周期 Hive 类型适配器
 class BillingCycleAdapter extends TypeAdapter<BillingCycle> {
   @override
-  final int typeId = 5;
+  final int typeId = 14;
 
   @override
   BillingCycle read(BinaryReader reader) {

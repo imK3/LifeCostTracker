@@ -1,23 +1,18 @@
 // home_dashboard_view.dart
 // LifeCostTracker
-// Created by LifeCostTracker Team
-// 主页仪表板视图
-// Home Dashboard View
+// 睡后成本 Dashboard 主页
 
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/home_dashboard_view_model.dart';
-import '../viewmodels/all_items_list_view_model.dart';
-import 'add_new_item_sheet.dart';
-import 'item_detail_view.dart';
+import '../viewmodels/sleep_cost_dashboard_view_model.dart';
+import '../viewmodels/settings_view_model.dart';
+import '../../domain/entities/display_cycle.dart';
+import '../../domain/entities/recurring_cost.dart';
+import '../../domain/entities/installment_plan.dart';
+import 'add_cost_item_sheet.dart';
+import 'cost_item_detail_view.dart';
 
-// Import types from viewmodels
-// 从 viewmodels 导入类型
-import '../viewmodels/all_items_list_view_model.dart'
-    show DisplayItem, ItemSortOption, ItemFilterOption, CostEffectivenessTier;
-
-/// Home Dashboard View - main screen of the app
-/// 主页仪表板视图 - 应用的主屏幕
 class HomeDashboardView extends StatefulWidget {
   const HomeDashboardView({super.key});
 
@@ -29,447 +24,508 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   @override
   void initState() {
     super.initState();
-    // Load data when widget initializes
-    // 小部件初始化时加载数据
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeDashboardViewModel>().loadDashboardData();
-      context.read<AllItemsListViewModel>().loadItems();
+      context.read<SleepCostDashboardViewModel>().loadDashboardData();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final settings = context.watch<SettingsViewModel>();
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('LifeCostTracker'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          // Filter button
-          // 过滤按钮
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              _showFilterSheet(context);
-            },
-          ),
-        ],
-      ),
-      body: Consumer2<HomeDashboardViewModel, AllItemsListViewModel>(
-        builder: (context, dashboardVM, listVM, child) {
-          if (dashboardVM.isLoading || listVM.isLoading) {
+      body: Consumer<SleepCostDashboardViewModel>(
+        builder: (context, vm, child) {
+          if (vm.isLoading && vm.summary.totalItemCount == 0) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (dashboardVM.errorMessage != null) {
-            return Center(
-              child: Text(
-                'Error: ${dashboardVM.errorMessage}',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            );
-          }
+          return RefreshIndicator(
+            onRefresh: vm.loadDashboardData,
+            child: CustomScrollView(
+              slivers: [
+                // App Bar
+                SliverAppBar(
+                  expandedHeight: 60,
+                  floating: true,
+                  title: const Text('睡后成本'),
+                  actions: [
+                    // Display cycle toggle
+                    PopupMenuButton<DisplayCycle>(
+                      icon: const Icon(Icons.tune),
+                      onSelected: (cycle) {
+                        vm.setDisplayCycle(cycle);
+                      },
+                      itemBuilder: (context) => DisplayCycle.values
+                          .map((c) => PopupMenuItem(
+                                value: c,
+                                child: Row(
+                                  children: [
+                                    if (c == vm.displayCycle)
+                                      Icon(Icons.check,
+                                          size: 18,
+                                          color: theme.colorScheme.primary),
+                                    if (c == vm.displayCycle)
+                                      const SizedBox(width: 8),
+                                    Text('按${c.displayName}'),
+                                  ],
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                ),
 
-          return CustomScrollView(
-            slivers: [
-              // Top Hero Section
-              // 顶部 Hero 区域
-              SliverToBoxAdapter(
-                child: _buildTopHeroSection(context, dashboardVM),
-              ),
+                // Hero Section - 大数字
+                SliverToBoxAdapter(
+                  child: _buildHeroSection(context, vm, settings),
+                ),
 
-              // Sorting Toggle
-              // 排序切换
-              SliverToBoxAdapter(
-                child: _buildSortingToggle(context, listVM),
-              ),
+                // Pie Chart
+                if (vm.summary.totalDailyCost > 0)
+                  SliverToBoxAdapter(
+                    child: _buildPieChart(context, vm),
+                  ),
 
-              // All Items List (grouped by tier)
-              // 所有物品列表（按等级分组）
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                sliver: _buildGroupedItemsList(context, listVM),
-              ),
-            ],
+                // Category breakdown header
+                if (vm.summary.totalItemCount > 0)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Text(
+                        '成本明细',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Fixed Living Costs Section
+                if (vm.summary.fixedLivingItems.isNotEmpty)
+                  _buildCostSection(
+                    context,
+                    title: '固定生活成本',
+                    subtitle:
+                        '${settings.currency}${vm.fixedLivingDisplayCost.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
+                    color: const Color(0xFF4CAF50),
+                    items: vm.summary.fixedLivingItems,
+                    vm: vm,
+                    settings: settings,
+                  ),
+
+                // Subscription Costs Section
+                if (vm.summary.subscriptionItems.isNotEmpty)
+                  _buildCostSection(
+                    context,
+                    title: '订阅费用',
+                    subtitle:
+                        '${settings.currency}${vm.subscriptionDisplayCost.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
+                    color: const Color(0xFF2196F3),
+                    items: vm.summary.subscriptionItems,
+                    vm: vm,
+                    settings: settings,
+                  ),
+
+                // Installment Plans Section
+                if (vm.summary.installmentItems.isNotEmpty)
+                  _buildInstallmentSection(context, vm, settings),
+
+                // Empty state
+                if (vm.summary.totalItemCount == 0)
+                  SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_circle_outline,
+                              size: 64,
+                              color: theme.colorScheme.outline),
+                          const SizedBox(height: 16),
+                          Text(
+                            '还没有成本项',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: theme.colorScheme.outline,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '点击右下角添加你的第一个成本项',
+                            style: TextStyle(
+                              color: theme.colorScheme.outline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // Bottom padding
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 80),
+                ),
+              ],
+            ),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            builder: (context) => const AddNewItemSheet(),
-          );
-        },
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        child: const Icon(Icons.add, color: Colors.white),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddCostSheet(context),
+        icon: const Icon(Icons.add),
+        label: const Text('添加'),
       ),
     );
   }
 
-  /// Build top hero section with 3 key metrics
-  /// 构建顶部 Hero 区域，显示3个关键指标
-  Widget _buildTopHeroSection(BuildContext context, HomeDashboardViewModel vm) {
-    final averageDailyCost = vm.averageDailyCost ?? 0.0;
-    final dailyCostBreakdown = vm.dailyCostBreakdown;
-    final subscriptionDailyCost =
-        dailyCostBreakdown?.subscriptionDailyCost ?? 0.0;
-    final totalItems =
-        context.read<AllItemsListViewModel>().displayItems.length;
+  Widget _buildHeroSection(
+    BuildContext context,
+    SleepCostDashboardViewModel vm,
+    SettingsViewModel settings,
+  ) {
+    final theme = Theme.of(context);
+    final cycle = vm.displayCycle;
+
+    String headline;
+    switch (cycle) {
+      case DisplayCycle.daily:
+        headline = '今天你一睁眼就欠了';
+      case DisplayCycle.monthly:
+        headline = '这个月你要付出';
+      case DisplayCycle.yearly:
+        headline = '今年你的固定支出是';
+    }
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor.withOpacity(0.2),
-          ),
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primaryContainer,
+            theme.colorScheme.secondaryContainer,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(24),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          // Left: Average Daily Cost
-          // 左侧：平均每日成本
-          _buildMetricCard(
-            context,
-            title: '平均每日成本',
-            value: '${averageDailyCost.toStringAsFixed(0)}元/天',
-            valueStyle: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+          Text(
+            headline,
+            style: TextStyle(
+              fontSize: 16,
+              color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+            ),
           ),
-
-          // Middle: Monthly Subscription Cost
-          // 中间：月度订阅支出
-          _buildMetricCard(
-            context,
-            title: '月度订阅支出',
-            value: '${(subscriptionDailyCost * 30).toStringAsFixed(0)}元/月',
-            subtitle: Text('${subscriptionDailyCost.toStringAsFixed(1)}元/天'),
+          const SizedBox(height: 8),
+          Text(
+            '${settings.currency}${vm.displayCost.toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: 48,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
           ),
-
-          // Right: Total Items
-          // 右侧：全部项目
-          _buildMetricCard(
-            context,
-            title: '全部项目',
-            value: '${totalItems}个项目',
+          const SizedBox(height: 4),
+          Text(
+            '每${cycle.unitLabel}',
+            style: TextStyle(
+              fontSize: 14,
+              color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Three mini stats
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildMiniStat(
+                context,
+                '固定生活',
+                '${settings.currency}${vm.fixedLivingDisplayCost.toStringAsFixed(0)}',
+                const Color(0xFF4CAF50),
+              ),
+              _buildMiniStat(
+                context,
+                '订阅',
+                '${settings.currency}${vm.subscriptionDisplayCost.toStringAsFixed(0)}',
+                const Color(0xFF2196F3),
+              ),
+              _buildMiniStat(
+                context,
+                '分期',
+                '${settings.currency}${vm.installmentDisplayCost.toStringAsFixed(0)}',
+                const Color(0xFFFF9800),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  /// Build metric card
-  /// 构建指标卡片
-  Widget _buildMetricCard(
-    BuildContext context, {
-    required String title,
-    required String value,
-    Widget? subtitle,
-    TextStyle? valueStyle,
-  }) {
+  Widget _buildMiniStat(
+    BuildContext context,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(height: 4),
         Text(
           value,
-          style: valueStyle ??
-              Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
         ),
-        if (subtitle != null) ...[
-          const SizedBox(height: 4),
-          subtitle!,
-        ],
-        const SizedBox(height: 8),
         Text(
-          title,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-          textAlign: TextAlign.center,
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context)
+                .colorScheme
+                .onPrimaryContainer
+                .withValues(alpha: 0.6),
+          ),
         ),
       ],
     );
   }
 
-  /// Build sorting toggle (segmented control)
-  /// 构建排序切换（分段控制器）
-  Widget _buildSortingToggle(BuildContext context, AllItemsListViewModel vm) {
+  Widget _buildPieChart(
+    BuildContext context,
+    SleepCostDashboardViewModel vm,
+  ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: SegmentedButton<ItemSortOption>(
-        segments: const [
-          ButtonSegment(
-            value: ItemSortOption.costEffectiveness,
-            label: Text('按性价比'),
-            icon: Icon(Icons.stars),
-          ),
-          ButtonSegment(
-            value: ItemSortOption.dailyCost,
-            label: Text('按日耗'),
-            icon: Icon(Icons.trending_down),
-          ),
-          ButtonSegment(
-            value: ItemSortOption.category,
-            label: Text('按分类'),
-            icon: Icon(Icons.category),
-          ),
-        ],
-        selected: {vm.sortOption},
-        onSelectionChanged: (Set<ItemSortOption> newSelection) {
-          vm.setSortOption(newSelection.first);
-        },
-      ),
-    );
-  }
-
-  /// Build item card
-  /// 构建物品卡片
-  Widget _buildItemCard(BuildContext context, DisplayItem item) {
-    final String name = item.name;
-    final String? category = item.category;
-    final double? dailyCost = item.dailyCost;
-    final String? type = item.type;
-    final String? tierLabel = _getTierLabel(item.tier);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (category != null)
-              Chip(
-                label: Text(category),
-                visualDensity: VisualDensity.compact,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      height: 200,
+      child: PieChart(
+        PieChartData(
+          sectionsSpace: 2,
+          centerSpaceRadius: 40,
+          sections: [
+            if (vm.summary.fixedLivingPercentage > 0)
+              PieChartSectionData(
+                value: vm.summary.fixedLivingPercentage * 100,
+                title:
+                    '${(vm.summary.fixedLivingPercentage * 100).toStringAsFixed(0)}%',
+                color: const Color(0xFF4CAF50),
+                radius: 50,
+                titleStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-            if (tierLabel != null)
-              Chip(
-                label: Text(tierLabel),
-                visualDensity: VisualDensity.compact,
-                backgroundColor:
-                    _getTierColor(item.tier, context).withOpacity(0.2),
+            if (vm.summary.subscriptionPercentage > 0)
+              PieChartSectionData(
+                value: vm.summary.subscriptionPercentage * 100,
+                title:
+                    '${(vm.summary.subscriptionPercentage * 100).toStringAsFixed(0)}%',
+                color: const Color(0xFF2196F3),
+                radius: 50,
+                titleStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            if (vm.summary.installmentPercentage > 0)
+              PieChartSectionData(
+                value: vm.summary.installmentPercentage * 100,
+                title:
+                    '${(vm.summary.installmentPercentage * 100).toStringAsFixed(0)}%',
+                color: const Color(0xFFFF9800),
+                radius: 50,
+                titleStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
           ],
         ),
-        title: Text(
-          name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: dailyCost != null
-            ? Text('日耗: ¥${dailyCost.toStringAsFixed(1)}')
-            : null,
-        trailing: dailyCost != null
-            ? Text(
-                '¥${dailyCost.toStringAsFixed(1)}',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              )
-            : null,
-        onTap: () {
-          // Navigate to item detail
-          // 导航到物品详情
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ItemDetailView(
-                itemId: item.id,
-                itemType: item.type,
-              ),
-            ),
-          );
-        },
       ),
     );
   }
 
-  /// Get tier label
-  /// 获取等级标签
-  String? _getTierLabel(CostEffectivenessTier tier) {
-    switch (tier) {
-      case CostEffectivenessTier.divine:
-        return '神仙性价比';
-      case CostEffectivenessTier.excellent:
-        return '超值';
-      case CostEffectivenessTier.good:
-        return '优秀';
-      case CostEffectivenessTier.fair:
-        return '一般';
-      case CostEffectivenessTier.poor:
-        return '不值得';
-    }
-  }
-
-  /// Get tier color
-  /// 获取等级颜色
-  Color _getTierColor(CostEffectivenessTier tier, BuildContext context) {
-    switch (tier) {
-      case CostEffectivenessTier.divine:
-        return Colors.green;
-      case CostEffectivenessTier.excellent:
-        return Colors.blue;
-      case CostEffectivenessTier.good:
-        return Colors.orange;
-      case CostEffectivenessTier.fair:
-        return Colors.orange.shade300;
-      case CostEffectivenessTier.poor:
-        return Colors.red;
-    }
-  }
-
-  /// Show filter sheet
-  /// 显示过滤表单
-  void _showFilterSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Consumer<AllItemsListViewModel>(
-          builder: (context, vm, child) {
-            return Container(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    '筛选物品',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  ...ItemFilterOption.values.map((option) {
-                    return RadioListTile<ItemFilterOption>(
-                      title: Text(_getFilterLabel(option)),
-                      value: option,
-                      groupValue: vm.filterOption,
-                      onChanged: (value) {
-                        if (value != null) {
-                          vm.setFilterOption(value);
-                          Navigator.pop(context);
-                        }
-                      },
-                    );
-                  }).toList(),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  /// Get filter label
-  /// 获取过滤标签
-  String _getFilterLabel(ItemFilterOption option) {
-    switch (option) {
-      case ItemFilterOption.all:
-        return '全部';
-      case ItemFilterOption.physical:
-        return '实物';
-      case ItemFilterOption.subscriptions:
-        return '订阅';
-      case ItemFilterOption.cloudServices:
-        return '云服务/工具';
-    }
-  }
-
-  /// Build grouped items list by cost-effectiveness tier
-  /// 按性价比等级构建分组的物品列表
-  Widget _buildGroupedItemsList(
-    BuildContext context,
-    AllItemsListViewModel listVM,
-  ) {
-    final groupedItems = listVM.groupedByTier;
-    final tiers = CostEffectivenessTier.values;
-
-    final List<Widget> flattenedChildren = [];
-
-    for (final tier in tiers) {
-      final tierItems = groupedItems[tier] ?? [];
-      if (tierItems.isEmpty) continue;
-
-      flattenedChildren.add(_buildTierHeader(context, tier));
-
-      for (final item in tierItems) {
-        flattenedChildren.add(_buildItemCard(context, item));
-      }
-    }
-
+  SliverList _buildCostSection(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required Color color,
+    required List<RecurringCost> items,
+    required SleepCostDashboardViewModel vm,
+    required SettingsViewModel settings,
+  }) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
-          if (index < flattenedChildren.length) {
-            return flattenedChildren[index];
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(title,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600)),
+                  const Spacer(),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.outline)),
+                ],
+              ),
+            );
           }
-          return null;
+
+          final item = items[index - 1];
+          final displayAmount =
+              item.dailyCost * vm.displayCycle.daysMultiplier;
+
+          return ListTile(
+            leading: Icon(item.category.icon, color: color),
+            title: Text(item.name),
+            subtitle: Text(
+                '${settings.currency}${item.amount.toStringAsFixed(0)}/${item.billingCycle.displayName}'),
+            trailing: Text(
+              '${settings.currency}${displayAmount.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            onTap: () => _navigateToDetail(context, recurringCost: item),
+          );
         },
-        childCount: flattenedChildren.length,
+        childCount: items.length + 1,
       ),
     );
   }
 
-  /// Build tier header with gradient for divine tier
-  /// 构建等级标题，神仙等级使用渐变
-  Widget _buildTierHeader(BuildContext context, CostEffectivenessTier tier) {
-    final tierName = _getTierLabel(tier);
-    final isDivine = tier == CostEffectivenessTier.divine;
-    final tierColor = _getTierColor(tier, context);
+  SliverList _buildInstallmentSection(
+    BuildContext context,
+    SleepCostDashboardViewModel vm,
+    SettingsViewModel settings,
+  ) {
+    final items = vm.summary.installmentItems;
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF9800),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('分期承诺',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  const Spacer(),
+                  Text(
+                    '${settings.currency}${vm.installmentDisplayCost.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.outline),
+                  ),
+                ],
+              ),
+            );
+          }
 
-    if (isDivine) {
-      // Divine tier with gradient
-      // 神仙等级使用渐变
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.green.shade400,
-              Colors.green.shade300,
-              Colors.blue.shade400,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          tierName ?? '',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
-    } else {
-      // Other tiers with solid color
-      // 其他等级使用纯色
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: tierColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: tierColor.withOpacity(0.3)),
-        ),
-        child: Text(
-          tierName ?? '',
-          style: TextStyle(
-            color: tierColor,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
-    }
+          final item = items[index - 1];
+          final displayAmount =
+              item.dailyCost * vm.displayCycle.daysMultiplier;
+
+          return ListTile(
+            leading: const Icon(Icons.credit_card,
+                color: Color(0xFFFF9800)),
+            title: Text(item.name),
+            subtitle: Text(
+                '${settings.currency}${item.monthlyPayment.toStringAsFixed(0)}/月 · 剩余${item.remainingPeriods}期'),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${settings.currency}${displayAmount.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                SizedBox(
+                  width: 60,
+                  child: LinearProgressIndicator(
+                    value: item.progress,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFFFF9800)),
+                  ),
+                ),
+              ],
+            ),
+            onTap: () => _navigateToDetail(context, installmentPlan: item),
+          );
+        },
+        childCount: items.length + 1,
+      ),
+    );
+  }
+
+  void _showAddCostSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => const AddCostItemSheet(),
+    ).then((_) {
+      context.read<SleepCostDashboardViewModel>().loadDashboardData();
+    });
+  }
+
+  void _navigateToDetail(
+    BuildContext context, {
+    RecurringCost? recurringCost,
+    InstallmentPlan? installmentPlan,
+  }) {
+    Navigator.of(context)
+        .push(MaterialPageRoute(
+      builder: (context) => CostItemDetailView(
+        recurringCost: recurringCost,
+        installmentPlan: installmentPlan,
+      ),
+    ))
+        .then((_) {
+      context.read<SleepCostDashboardViewModel>().loadDashboardData();
+    });
   }
 }

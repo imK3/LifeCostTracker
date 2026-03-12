@@ -1,6 +1,10 @@
+// main_navigation.dart
+// LifeCostTracker
+// 主导航（底部导航栏）
+
 import 'package:flutter/material.dart';
 import 'home_dashboard_view.dart';
-import 'reports_view.dart';
+import 'affordability_simulator_view.dart';
 import 'settings_view.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -12,10 +16,10 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
-  
+
   final List<Widget> _screens = const [
     HomeDashboardView(),
-    ReportsView(),
+    AffordabilitySimulatorView(),
     SettingsView(),
   ];
 
@@ -35,14 +39,14 @@ class _MainNavigationState extends State<MainNavigation> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: '首页',
+            icon: Icon(Icons.bedtime_outlined),
+            selectedIcon: Icon(Icons.bedtime),
+            label: '睡后成本',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: '报表',
+            icon: Icon(Icons.calculate_outlined),
+            selectedIcon: Icon(Icons.calculate),
+            label: '模拟器',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

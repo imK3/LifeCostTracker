@@ -1,6 +1,5 @@
 // billing_cycle.dart
 // LifeCostTracker
-// Created by LifeCostTracker Team
 // 账单周期
 // Billing cycle
 
@@ -15,6 +14,10 @@ enum BillingCycle {
   /// 每月
   monthly,
 
+  /// Quarterly billing
+  /// 每季度
+  quarterly,
+
   /// Yearly billing
   /// 每年
   yearly;
@@ -27,6 +30,8 @@ enum BillingCycle {
         return '每周';
       case BillingCycle.monthly:
         return '每月';
+      case BillingCycle.quarterly:
+        return '每季度';
       case BillingCycle.yearly:
         return '每年';
     }
@@ -40,6 +45,8 @@ enum BillingCycle {
         return 7;
       case BillingCycle.monthly:
         return 30;
+      case BillingCycle.quarterly:
+        return 90;
       case BillingCycle.yearly:
         return 365;
     }
