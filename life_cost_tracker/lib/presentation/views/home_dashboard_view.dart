@@ -358,10 +358,21 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   ) {
     final theme = Theme.of(context);
     final summary = vm.summary;
-    final paid = summary.monthlyPaidAmount;
-    final unpaid = summary.monthlyUnpaidAmount;
-    final progress = summary.monthlyPaymentProgress;
-    final now = DateTime.now();
+    final paid = summary.paidAmount;
+    final unpaid = summary.unpaidAmount;
+    final progress = summary.paymentProgress;
+    final cycle = vm.paymentCycle;
+
+    // Title based on cycle
+    String title;
+    switch (cycle) {
+      case DisplayCycle.daily:
+        title = '今日缴费';
+      case DisplayCycle.monthly:
+        title = '${DateTime.now().month}月缴费进度';
+      case DisplayCycle.yearly:
+        title = '${DateTime.now().year}年缴费进度';
+    }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -379,7 +390,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                   size: 18, color: theme.colorScheme.primary),
               const SizedBox(width: 6),
               Text(
-                '${now.month}月缴费进度',
+                title,
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -394,6 +405,35 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          // Cycle selector
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<DisplayCycle>(
+              segments: const [
+                ButtonSegment(
+                  value: DisplayCycle.daily,
+                  label: Text('每日', style: TextStyle(fontSize: 12)),
+                ),
+                ButtonSegment(
+                  value: DisplayCycle.monthly,
+                  label: Text('每月', style: TextStyle(fontSize: 12)),
+                ),
+                ButtonSegment(
+                  value: DisplayCycle.yearly,
+                  label: Text('每年', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+              selected: {cycle},
+              onSelectionChanged: (selected) {
+                vm.setPaymentCycle(selected.first);
+              },
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           // Progress bar

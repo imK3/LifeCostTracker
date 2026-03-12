@@ -20,12 +20,14 @@ class SleepCostDashboardViewModel extends ChangeNotifier {
   // State
   SleepCostSummary _summary = SleepCostSummary.empty;
   DisplayCycle _displayCycle = DisplayCycle.daily;
+  DisplayCycle _paymentCycle = DisplayCycle.monthly;
   bool _isLoading = false;
   String? _errorMessage;
 
   // Getters
   SleepCostSummary get summary => _summary;
   DisplayCycle get displayCycle => _displayCycle;
+  DisplayCycle get paymentCycle => _paymentCycle;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -62,10 +64,17 @@ class SleepCostDashboardViewModel extends ChangeNotifier {
     }
   }
 
-  /// Change the display cycle
-  /// 切换展示周期
+  /// Change the display cycle (burn rate)
+  /// 切换展示周期（燃烧率）
   void setDisplayCycle(DisplayCycle cycle) {
     _displayCycle = cycle;
+    notifyListeners();
+  }
+
+  /// Change the payment tracking cycle
+  /// 切换缴费追踪周期
+  void setPaymentCycle(DisplayCycle cycle) {
+    _paymentCycle = cycle;
     notifyListeners();
   }
 }
