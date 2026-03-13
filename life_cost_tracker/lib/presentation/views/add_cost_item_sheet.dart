@@ -92,12 +92,32 @@ class AddCostItemSheet extends StatelessWidget {
                     const SizedBox(height: 16),
 
                     if (vm.selectedType == AddCostItemType.recurring) ...[
-                      // Amount field
-                      TextField(
+                      // Base period — 用户心智周期
+                      DropdownButtonFormField<BillingCycle>(
+                        initialValue: vm.basePeriod,
                         decoration: const InputDecoration(
-                          labelText: '金额',
-                          hintText: '每期金额',
+                          labelText: '基础周期',
+                          helperText: '你习惯怎么理解这笔费用',
                           border: OutlineInputBorder(),
+                        ),
+                        items: BillingCycle.values
+                            .map((c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c.displayName),
+                                ))
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) vm.setBasePeriod(v);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Amount field — 基础周期金额
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: '${vm.basePeriod.displayName}金额',
+                          hintText: '例如：月租4500',
+                          border: const OutlineInputBorder(),
                           prefixText: '¥ ',
                         ),
                         keyboardType: TextInputType.number,
@@ -106,11 +126,12 @@ class AddCostItemSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Billing cycle
+                      // Billing cycle — 实际付款周期
                       DropdownButtonFormField<BillingCycle>(
                         initialValue: vm.billingCycle,
                         decoration: const InputDecoration(
-                          labelText: '账单周期',
+                          labelText: '付款周期',
+                          helperText: '实际多久付一次款',
                           border: OutlineInputBorder(),
                         ),
                         items: BillingCycle.values
@@ -123,6 +144,34 @@ class AddCostItemSheet extends StatelessWidget {
                           if (v != null) vm.setBillingCycle(v);
                         },
                       ),
+
+                      // 当基础周期≠付款周期时，显示实际付款金额
+                      if (vm.basePeriod != vm.billingCycle &&
+                          vm.amount > 0) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline,
+                                  size: 16, color: Colors.orange.shade700),
+                              const SizedBox(width: 8),
+                              Text(
+                                '每次实际付款 ¥${vm.previewPaymentAmount.toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  color: Colors.orange.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
 
                       // Category

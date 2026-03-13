@@ -40,8 +40,9 @@ class AddCostItemViewModel extends ChangeNotifier {
 
   // State - recurring cost fields
   String _name = '';
-  double _amount = 0;
-  BillingCycle _billingCycle = BillingCycle.monthly;
+  double _amount = 0; // 基础周期金额（用户心智金额）
+  BillingCycle _basePeriod = BillingCycle.monthly; // 基础周期（用户心智周期）
+  BillingCycle _billingCycle = BillingCycle.monthly; // 实际账单周期
   CostCategory _category = CostCategory.other;
   int _dueDay = 1; // 每月几号到期
   bool _alreadyPaid = false; // 本期是否已支付
@@ -62,7 +63,12 @@ class AddCostItemViewModel extends ChangeNotifier {
   AddCostItemType? get selectedType => _selectedType;
   String get name => _name;
   double get amount => _amount;
+  BillingCycle get basePeriod => _basePeriod;
   BillingCycle get billingCycle => _billingCycle;
+
+  /// 实际付款金额预览
+  double get previewPaymentAmount =>
+      _amount * _billingCycle.multiplierFrom(_basePeriod);
   CostCategory get category => _category;
   int get dueDay => _dueDay;
   bool get alreadyPaid => _alreadyPaid;
@@ -78,7 +84,7 @@ class AddCostItemViewModel extends ChangeNotifier {
   /// 预览当前输入的每日成本
   double get previewDailyCost {
     if (_selectedType == AddCostItemType.recurring) {
-      return _amount / _billingCycle.daysInCycle;
+      return _amount / _basePeriod.daysInCycle;
     } else if (_selectedType == AddCostItemType.installment) {
       return _monthlyPayment / 30;
     }
@@ -108,6 +114,11 @@ class AddCostItemViewModel extends ChangeNotifier {
   void setAmount(double value) {
     _amount = value;
     _validateFields();
+  }
+
+  void setBasePeriod(BillingCycle value) {
+    _basePeriod = value;
+    notifyListeners();
   }
 
   void setBillingCycle(BillingCycle value) {
@@ -199,6 +210,7 @@ class AddCostItemViewModel extends ChangeNotifier {
         final cost = RecurringCost(
           name: _name.trim(),
           amount: _amount,
+          basePeriod: _basePeriod,
           billingCycle: _billingCycle,
           category: _category,
           startDate: now,
@@ -275,6 +287,7 @@ class AddCostItemViewModel extends ChangeNotifier {
     _selectedType = null;
     _name = '';
     _amount = 0;
+    _basePeriod = BillingCycle.monthly;
     _billingCycle = BillingCycle.monthly;
     _category = CostCategory.other;
     _dueDay = 1;

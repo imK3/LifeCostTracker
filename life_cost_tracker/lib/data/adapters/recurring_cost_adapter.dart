@@ -17,6 +17,7 @@ class RecurringCostAdapter extends TypeAdapter<RecurringCost> {
     final id = reader.readString();
     final name = reader.readString();
     final amount = reader.readDouble();
+    final basePeriodIndex = reader.readInt(); // -1 means same as billingCycle
     final billingCycle = BillingCycle.values[reader.readInt()];
     final category = CostCategory.values[reader.readInt()];
     final startDate = DateTime.parse(reader.readString());
@@ -30,6 +31,8 @@ class RecurringCostAdapter extends TypeAdapter<RecurringCost> {
       id: id,
       name: name,
       amount: amount,
+      basePeriod:
+          basePeriodIndex >= 0 ? BillingCycle.values[basePeriodIndex] : null,
       billingCycle: billingCycle,
       category: category,
       startDate: startDate,
@@ -46,6 +49,7 @@ class RecurringCostAdapter extends TypeAdapter<RecurringCost> {
     writer.writeString(obj.id);
     writer.writeString(obj.name);
     writer.writeDouble(obj.amount);
+    writer.writeInt(obj.basePeriod.index);
     writer.writeInt(obj.billingCycle.index);
     writer.writeInt(obj.category.index);
     writer.writeString(obj.startDate.toIso8601String());

@@ -17,12 +17,16 @@ class RecurringCost {
   /// 成本项名称
   final String name;
 
-  /// Amount per billing cycle
-  /// 每个账单周期的金额
+  /// Base amount — the amount the user thinks in
+  /// 基础金额 — 用户心智周期的金额（如"月租4500"）
   final double amount;
 
-  /// Billing cycle
-  /// 账单周期
+  /// Base period — the cycle the user thinks in
+  /// 基础周期 — 用户心智周期（如"每月"）
+  final BillingCycle basePeriod;
+
+  /// Billing cycle — the actual payment cycle
+  /// 账单周期 — 实际付款周期（如"每季度"）
   final BillingCycle billingCycle;
 
   /// Category of the cost
@@ -53,9 +57,14 @@ class RecurringCost {
   /// 备注
   final String? notes;
 
-  /// Calculate daily cost
-  /// 计算每日成本
-  double get dailyCost => amount / billingCycle.daysInCycle;
+  /// Payment amount — actual amount paid per billing cycle
+  /// 实际付款金额 = baseAmount × (billingCycle / basePeriod)
+  /// 例如：月租4500，季度付 → paymentAmount = 4500 × 3 = 13500
+  double get paymentAmount => amount * billingCycle.multiplierFrom(basePeriod);
+
+  /// Calculate daily cost (based on base period, not billing cycle)
+  /// 计算每日成本（基于用户心智周期）
+  double get dailyCost => amount / basePeriod.daysInCycle;
 
   /// Calculate monthly equivalent cost
   double get monthlyCost => dailyCost * 30;
@@ -129,6 +138,7 @@ class RecurringCost {
     String? id,
     required this.name,
     required this.amount,
+    BillingCycle? basePeriod,
     required this.billingCycle,
     required this.category,
     required this.startDate,
@@ -137,13 +147,15 @@ class RecurringCost {
     this.isPaidForCurrentPeriod = false,
     this.isActive = true,
     this.notes,
-  }) : id = id ?? const Uuid().v4();
+  })  : basePeriod = basePeriod ?? billingCycle,
+        id = id ?? const Uuid().v4();
 
   /// Create a copy with optional updated values
   RecurringCost copyWith({
     String? id,
     String? name,
     double? amount,
+    BillingCycle? basePeriod,
     BillingCycle? billingCycle,
     CostCategory? category,
     DateTime? startDate,
@@ -157,6 +169,7 @@ class RecurringCost {
       id: id ?? this.id,
       name: name ?? this.name,
       amount: amount ?? this.amount,
+      basePeriod: basePeriod ?? this.basePeriod,
       billingCycle: billingCycle ?? this.billingCycle,
       category: category ?? this.category,
       startDate: startDate ?? this.startDate,
@@ -199,6 +212,7 @@ class RecurringCost {
       'id': id,
       'name': name,
       'amount': amount,
+      'basePeriod': basePeriod.name,
       'billingCycle': billingCycle.name,
       'category': category.name,
       'startDate': startDate.toIso8601String(),
@@ -216,6 +230,12 @@ class RecurringCost {
       id: json['id'] as String,
       name: json['name'] as String,
       amount: json['amount'] as double,
+      basePeriod: json['basePeriod'] != null
+          ? BillingCycle.values.firstWhere(
+              (e) => e.name == json['basePeriod'],
+              orElse: () => BillingCycle.monthly,
+            )
+          : null, // null → defaults to billingCycle in constructor
       billingCycle: BillingCycle.values.firstWhere(
         (e) => e.name == json['billingCycle'],
         orElse: () => BillingCycle.monthly,

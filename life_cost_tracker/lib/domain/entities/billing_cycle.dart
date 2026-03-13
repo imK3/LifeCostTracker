@@ -103,6 +103,30 @@ enum BillingCycle {
     }
   }
 
+  /// Number of months in this cycle (for multiplier calculation)
+  /// 周期包含的月数（用于倍数计算）
+  int get monthsInCycle {
+    switch (this) {
+      case BillingCycle.weekly:
+        return 0; // 特殊处理：周付用天数计算
+      case BillingCycle.monthly:
+        return 1;
+      case BillingCycle.quarterly:
+        return 3;
+      case BillingCycle.yearly:
+        return 12;
+    }
+  }
+
+  /// Calculate multiplier from basePeriod to this billingCycle
+  /// 计算从基础周期到账单周期的倍数
+  /// 例如：basePeriod=monthly, billingCycle=quarterly → 3
+  double multiplierFrom(BillingCycle basePeriod) {
+    if (this == basePeriod) return 1.0;
+    // 用天数比来计算，兼容 weekly
+    return daysInCycle / basePeriod.daysInCycle;
+  }
+
   /// Validate and clamp the due day value for this cycle
   /// 校验并限制到期日值
   int clampDueDay(int value) {
