@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:life_cost_tracker/domain/entities/recurring_cost.dart';
 import 'package:life_cost_tracker/domain/entities/billing_cycle.dart';
 import 'package:life_cost_tracker/domain/entities/cost_category.dart';
+// CostCategoryGroup is exported from cost_category.dart
 
 void main() {
   group('RecurringCost', () {
@@ -61,7 +62,7 @@ void main() {
       expect(cost.dailyCost, 50.0);
     });
 
-    test('should correctly identify fixed living vs subscription', () {
+    test('should correctly identify category group', () {
       final rent = RecurringCost(
         name: '房租',
         amount: 3000,
@@ -80,10 +81,8 @@ void main() {
         nextDueDate: DateTime(2026, 2, 1),
       );
 
-      expect(rent.isFixedLiving, true);
-      expect(rent.isSubscription, false);
-      expect(claude.isFixedLiving, false);
-      expect(claude.isSubscription, true);
+      expect(rent.group, CostCategoryGroup.housing);
+      expect(claude.group, CostCategoryGroup.digitalSubscription);
     });
 
     test('should calculate monthly and yearly equivalents', () {

@@ -72,11 +72,9 @@ class RecurringCost {
   /// Calculate yearly equivalent cost
   double get yearlyCost => dailyCost * 365;
 
-  /// Whether this is a fixed living cost
-  bool get isFixedLiving => category.isFixedLiving;
-
-  /// Whether this is a subscription
-  bool get isSubscription => category.isSubscription;
+  /// Category group this item belongs to
+  /// 所属大类
+  CostCategoryGroup get group => category.group;
 
   /// Whether payment is overdue (past due date and not paid)
   /// 是否逾期（过了到期日但未支付）

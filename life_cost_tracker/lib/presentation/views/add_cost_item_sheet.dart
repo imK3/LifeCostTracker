@@ -174,24 +174,43 @@ class AddCostItemSheet extends StatelessWidget {
                       ],
                       const SizedBox(height: 16),
 
-                      // Category
+                      // Category (grouped by CostCategoryGroup)
                       DropdownButtonFormField<CostCategory>(
                         initialValue: vm.category,
                         decoration: const InputDecoration(
                           labelText: '分类',
                           border: OutlineInputBorder(),
                         ),
-                        items: CostCategory.values
-                            .map((c) => DropdownMenuItem(
-                                  value: c,
-                                  child: Row(
-                                    children: [
-                                      Icon(c.icon, size: 20),
-                                      const SizedBox(width: 8),
-                                      Text(c.displayName),
-                                    ],
+                        items: CostCategoryGroup.values
+                            .expand((group) {
+                              final cats = CostCategory.values
+                                  .where((c) => c.group == group)
+                                  .toList();
+                              return [
+                                DropdownMenuItem<CostCategory>(
+                                  enabled: false,
+                                  child: Text(
+                                    group.displayName,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: group.color,
+                                    ),
                                   ),
-                                ))
+                                ),
+                                ...cats.map((c) => DropdownMenuItem(
+                                      value: c,
+                                      child: Row(
+                                        children: [
+                                          const SizedBox(width: 12),
+                                          Icon(c.icon, size: 20),
+                                          const SizedBox(width: 8),
+                                          Text(c.displayName),
+                                        ],
+                                      ),
+                                    )),
+                              ];
+                            })
                             .toList(),
                         onChanged: (v) {
                           if (v != null) vm.setCategory(v);

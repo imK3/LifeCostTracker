@@ -1,10 +1,10 @@
 // calculate_sleep_cost_usecase.dart
 // LifeCostTracker
 // 核心用例：计算睡后成本
-// Core use case: calculate sleep cost
 
 import 'base_usecase.dart';
 import '../entities/sleep_cost_summary.dart';
+import '../entities/cost_category.dart';
 import '../repositories/recurring_cost_repository.dart';
 import '../repositories/installment_plan_repository.dart';
 
@@ -12,7 +12,6 @@ import '../repositories/installment_plan_repository.dart';
 ///
 /// 睡后成本 = 你的生活燃烧率
 /// 所有 active 的周期性成本都计入，不管本期是否已支付。
-/// 因为房租付了这个月，下个月还要付；保险付了今年，明年还要续。
 /// 只有 isActive=false（退租、取消订阅）才不算。
 ///
 /// 已付/未付状态仅用于 UI 展示（缴费追踪、到期提醒）。
@@ -38,39 +37,30 @@ class CalculateSleepCostUseCase
     final activeInstallments =
         installments.where((i) => !i.isCompleted).toList();
 
-    // Split by category (for display)
-    final fixedLivingItems =
-        activeRecurring.where((c) => c.isFixedLiving).toList();
-    final subscriptionItems =
-        activeRecurring.where((c) => c.isSubscription).toList();
+    // Split by payment status
+    final unpaidItems =
+        activeRecurring.where((c) => !c.isPaidForCurrentPeriod).toList();
+    final paidItems =
+        activeRecurring.where((c) => c.isPaidForCurrentPeriod).toList();
 
-    // Split by payment status (for UI tracking)
-    final unpaidFixedLiving =
-        fixedLivingItems.where((c) => !c.isPaidForCurrentPeriod).toList();
-    final paidFixedLiving =
-        fixedLivingItems.where((c) => c.isPaidForCurrentPeriod).toList();
-    final unpaidSubscription =
-        subscriptionItems.where((c) => !c.isPaidForCurrentPeriod).toList();
-    final paidSubscription =
-        subscriptionItems.where((c) => c.isPaidForCurrentPeriod).toList();
+    // Aggregate daily cost by category group
+    final groupDailyCosts = <CostCategoryGroup, double>{};
+    for (final item in activeRecurring) {
+      final group = item.group;
+      groupDailyCosts[group] = (groupDailyCosts[group] ?? 0) + item.dailyCost;
+    }
 
-    // ALL active items count toward sleep cost (burn rate)
-    final fixedLivingDaily =
-        fixedLivingItems.fold<double>(0, (sum, c) => sum + c.dailyCost);
-    final subscriptionDaily =
-        subscriptionItems.fold<double>(0, (sum, c) => sum + c.dailyCost);
+    final recurringDaily =
+        activeRecurring.fold<double>(0, (sum, c) => sum + c.dailyCost);
     final installmentDaily =
         activeInstallments.fold<double>(0, (sum, i) => sum + i.dailyCost);
 
     return SleepCostSummary(
-      totalDailyCost: fixedLivingDaily + subscriptionDaily + installmentDaily,
-      fixedLivingDaily: fixedLivingDaily,
-      subscriptionDaily: subscriptionDaily,
+      totalDailyCost: recurringDaily + installmentDaily,
+      groupDailyCosts: groupDailyCosts,
       installmentDaily: installmentDaily,
-      unpaidFixedLivingItems: unpaidFixedLiving,
-      unpaidSubscriptionItems: unpaidSubscription,
-      paidFixedLivingItems: paidFixedLiving,
-      paidSubscriptionItems: paidSubscription,
+      unpaidItems: unpaidItems,
+      paidItems: paidItems,
       installmentItems: activeInstallments,
     );
   }

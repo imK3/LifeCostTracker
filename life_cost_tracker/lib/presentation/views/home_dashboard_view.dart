@@ -11,6 +11,7 @@ import '../viewmodels/settings_view_model.dart';
 import '../../domain/entities/display_cycle.dart';
 import '../../domain/entities/recurring_cost.dart';
 import '../../domain/entities/installment_plan.dart';
+import '../../domain/entities/cost_category.dart';
 import 'add_cost_item_sheet.dart';
 import 'cost_item_detail_view.dart';
 
@@ -268,28 +269,27 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             ),
           ),
           const SizedBox(height: 16),
-          // Three mini stats
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          // Top category groups + installment
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              _buildMiniStat(
-                context,
-                '固定生活',
-                '${settings.currency}${vm.fixedLivingDisplayCost.toStringAsFixed(0)}',
-                const Color(0xFF4CAF50),
+              ...vm.summary.activeGroups.take(3).map((group) =>
+                _buildMiniStat(
+                  context,
+                  group.displayName,
+                  '${settings.currency}${vm.groupDisplayCost(group).toStringAsFixed(0)}',
+                  group.color,
+                ),
               ),
-              _buildMiniStat(
-                context,
-                '订阅',
-                '${settings.currency}${vm.subscriptionDisplayCost.toStringAsFixed(0)}',
-                const Color(0xFF2196F3),
-              ),
-              _buildMiniStat(
-                context,
-                '分期',
-                '${settings.currency}${vm.installmentDisplayCost.toStringAsFixed(0)}',
-                const Color(0xFFFF9800),
-              ),
+              if (vm.installmentDisplayCost > 0)
+                _buildMiniStat(
+                  context,
+                  '分期',
+                  '${settings.currency}${vm.installmentDisplayCost.toStringAsFixed(0)}',
+                  const Color(0xFFFF9800),
+                ),
             ],
           ),
         ],
@@ -477,56 +477,111 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     BuildContext context,
     SleepCostDashboardViewModel vm,
   ) {
+    final sections = <PieChartSectionData>[];
+
+    // Add sections for each active category group
+    for (final group in vm.summary.activeGroups) {
+      final pct = vm.summary.groupPercentage(group);
+      if (pct > 0) {
+        sections.add(PieChartSectionData(
+          value: pct * 100,
+          title: '${(pct * 100).toStringAsFixed(0)}%',
+          color: group.color,
+          radius: 50,
+          titleStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ));
+      }
+    }
+
+    // Add installment section
+    if (vm.summary.installmentPercentage > 0) {
+      sections.add(PieChartSectionData(
+        value: vm.summary.installmentPercentage * 100,
+        title:
+            '${(vm.summary.installmentPercentage * 100).toStringAsFixed(0)}%',
+        color: const Color(0xFFFF9800),
+        radius: 50,
+        titleStyle: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ));
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
-      height: 200,
-      child: PieChart(
-        PieChartData(
-          sectionsSpace: 2,
-          centerSpaceRadius: 40,
-          sections: [
-            if (vm.summary.fixedLivingPercentage > 0)
-              PieChartSectionData(
-                value: vm.summary.fixedLivingPercentage * 100,
-                title:
-                    '${(vm.summary.fixedLivingPercentage * 100).toStringAsFixed(0)}%',
-                color: const Color(0xFF4CAF50),
-                radius: 50,
-                titleStyle: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+      height: 220,
+      child: Row(
+        children: [
+          // Pie chart
+          Expanded(
+            flex: 3,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 2,
+                centerSpaceRadius: 35,
+                sections: sections,
               ),
-            if (vm.summary.subscriptionPercentage > 0)
-              PieChartSectionData(
-                value: vm.summary.subscriptionPercentage * 100,
-                title:
-                    '${(vm.summary.subscriptionPercentage * 100).toStringAsFixed(0)}%',
-                color: const Color(0xFF2196F3),
-                radius: 50,
-                titleStyle: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            if (vm.summary.installmentPercentage > 0)
-              PieChartSectionData(
-                value: vm.summary.installmentPercentage * 100,
-                title:
-                    '${(vm.summary.installmentPercentage * 100).toStringAsFixed(0)}%',
-                color: const Color(0xFFFF9800),
-                radius: 50,
-                titleStyle: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-          ],
-        ),
+            ),
+          ),
+          // Legend
+          Expanded(
+            flex: 2,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...vm.summary.activeGroups.map((group) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: group.color,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          group.displayName,
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+                if (vm.summary.installmentPercentage > 0)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF9800),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Text('分期', style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -733,7 +788,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                   ),
                   const Spacer(),
                   Text(
-                    '${settings.currency}${items.fold<double>(0, (s, i) => s + i.amount).toStringAsFixed(0)}',
+                    '${settings.currency}${items.fold<double>(0, (s, i) => s + i.paymentAmount).toStringAsFixed(0)}',
                     style: TextStyle(
                       fontSize: 13,
                       color: theme.colorScheme.outline,
