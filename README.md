@@ -54,6 +54,16 @@
 </tr>
 </table>
 
+## Screenshots
+
+<div align="center">
+<img src="docs/screenshots/dashboard.jpg" width="250" />
+&nbsp;&nbsp;
+<img src="docs/screenshots/calendar.jpg" width="250" />
+&nbsp;&nbsp;
+<img src="docs/screenshots/happiness-research.jpg" width="250" />
+</div>
+
 ## Category System
 
 8 大类 **·** 26 子分类，覆盖日常固定支出：
