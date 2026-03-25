@@ -174,48 +174,8 @@ class AddCostItemSheet extends StatelessWidget {
                       ],
                       const SizedBox(height: 16),
 
-                      // Category (grouped by CostCategoryGroup)
-                      DropdownButtonFormField<CostCategory>(
-                        initialValue: vm.category,
-                        decoration: const InputDecoration(
-                          labelText: '分类',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: CostCategoryGroup.values
-                            .expand((group) {
-                              final cats = CostCategory.values
-                                  .where((c) => c.group == group)
-                                  .toList();
-                              return [
-                                DropdownMenuItem<CostCategory>(
-                                  enabled: false,
-                                  child: Text(
-                                    group.displayName,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: group.color,
-                                    ),
-                                  ),
-                                ),
-                                ...cats.map((c) => DropdownMenuItem(
-                                      value: c,
-                                      child: Row(
-                                        children: [
-                                          const SizedBox(width: 12),
-                                          Icon(c.icon, size: 20),
-                                          const SizedBox(width: 8),
-                                          Text(c.displayName),
-                                        ],
-                                      ),
-                                    )),
-                              ];
-                            })
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) vm.setCategory(v);
-                        },
-                      ),
+                      // Category picker (two-level)
+                      _buildCategoryPicker(context, vm),
                       const SizedBox(height: 16),
 
                       // Due day (adapts to billing cycle)
@@ -232,14 +192,8 @@ class AddCostItemSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
 
-                      // Already paid toggle
-                      SwitchListTile(
-                        title: const Text('本期已支付'),
-                        subtitle: const Text('如果这个月/这期已经付过了'),
-                        value: vm.alreadyPaid,
-                        onChanged: vm.setAlreadyPaid,
-                        contentPadding: EdgeInsets.zero,
-                      ),
+                      // Last paid date picker
+                      _buildLastPaidDatePicker(context, vm),
                     ],
 
                     if (vm.selectedType ==
@@ -382,6 +336,110 @@ class AddCostItemSheet extends StatelessWidget {
     );
   }
 
+  /// 上次支付日期选择器
+  Widget _buildLastPaidDatePicker(
+      BuildContext context, AddCostItemViewModel vm) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '上次支付日期',
+          style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: vm.lastPaidDate ?? DateTime.now(),
+                    firstDate:
+                        DateTime.now().subtract(const Duration(days: 730)),
+                    lastDate: DateTime.now(),
+                    helpText: '选择上次支付日期',
+                  );
+                  if (picked != null) {
+                    vm.setLastPaidDate(picked);
+                  }
+                },
+                icon: const Icon(Icons.calendar_today, size: 18),
+                label: Text(
+                  vm.lastPaidDate != null
+                      ? '${vm.lastPaidDate!.year}-${vm.lastPaidDate!.month.toString().padLeft(2, '0')}-${vm.lastPaidDate!.day.toString().padLeft(2, '0')}'
+                      : '选择日期（可选）',
+                ),
+                style: OutlinedButton.styleFrom(
+                  alignment: Alignment.centerLeft,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                ),
+              ),
+            ),
+            if (vm.lastPaidDate != null) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => vm.setLastPaidDate(null),
+                icon: const Icon(Icons.clear, size: 20),
+                tooltip: '清除',
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          vm.lastPaidDate != null ? '将根据此日期推算下次到期日' : '不选则根据到期日字段推算',
+          style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
+        ),
+      ],
+    );
+  }
+
+  /// 分类选择器 - 点击弹出二级菜单
+  Widget _buildCategoryPicker(
+      BuildContext context, AddCostItemViewModel vm) {
+    return GestureDetector(
+      onTap: () => _showCategoryPickerDialog(context, vm),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: '分类',
+          border: OutlineInputBorder(),
+          suffixIcon: Icon(Icons.arrow_drop_down),
+        ),
+        child: Row(
+          children: [
+            Icon(vm.category.icon, size: 20, color: vm.category.group.color),
+            const SizedBox(width: 8),
+            Text('${vm.category.group.displayName} · ${vm.category.displayName}'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 二级分类选择弹窗
+  void _showCategoryPickerDialog(
+      BuildContext context, AddCostItemViewModel vm) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return _CategoryPickerContent(
+          currentCategory: vm.category,
+          onSelected: (cat) {
+            vm.setCategory(cat);
+            Navigator.of(context).pop();
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildTypeCard(
     BuildContext context, {
     required IconData icon,
@@ -434,6 +492,195 @@ class AddCostItemSheet extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 二级分类选择器内容（StatefulWidget 管理选中的 group）
+class _CategoryPickerContent extends StatefulWidget {
+  final CostCategory currentCategory;
+  final ValueChanged<CostCategory> onSelected;
+
+  const _CategoryPickerContent({
+    required this.currentCategory,
+    required this.onSelected,
+  });
+
+  @override
+  State<_CategoryPickerContent> createState() =>
+      _CategoryPickerContentState();
+}
+
+class _CategoryPickerContentState extends State<_CategoryPickerContent> {
+  late CostCategoryGroup _selectedGroup;
+  String _searchText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedGroup = widget.currentCategory.group;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const groups = CostCategoryGroup.values;
+
+    // 当前组下的子分类（支持搜索过滤）
+    List<CostCategory> subcategories;
+    if (_searchText.isNotEmpty) {
+      // 搜索模式：显示所有匹配的子分类
+      subcategories = CostCategory.values
+          .where((c) => c.displayName.contains(_searchText))
+          .toList();
+    } else {
+      subcategories = CostCategory.values
+          .where((c) => c.group == _selectedGroup)
+          .toList();
+    }
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.5,
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 搜索框
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: '搜索分类...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onChanged: (v) => setState(() => _searchText = v),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 左右两栏
+          Expanded(
+            child: Row(
+              children: [
+                // 左栏：大类
+                SizedBox(
+                  width: 100,
+                  child: ListView.builder(
+                    itemCount: groups.length,
+                    itemBuilder: (context, index) {
+                      final group = groups[index];
+                      final isSelected =
+                          group == _selectedGroup && _searchText.isEmpty;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedGroup = group;
+                            _searchText = '';
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? theme.colorScheme.surface
+                                : theme.colorScheme.surfaceContainerLow,
+                            border: Border(
+                              left: BorderSide(
+                                color: isSelected
+                                    ? group.color
+                                    : Colors.transparent,
+                                width: 3,
+                              ),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(group.icon,
+                                  size: 22,
+                                  color: isSelected
+                                      ? group.color
+                                      : theme.colorScheme.outline),
+                              const SizedBox(height: 4),
+                              Text(
+                                group.displayName,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isSelected
+                                      ? group.color
+                                      : theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                // 右栏：子分类
+                Expanded(
+                  child: subcategories.isEmpty
+                      ? Center(
+                          child: Text('无匹配分类',
+                              style:
+                                  TextStyle(color: theme.colorScheme.outline)),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          itemCount: subcategories.length,
+                          itemBuilder: (context, index) {
+                            final cat = subcategories[index];
+                            final isCurrentSelected =
+                                cat == widget.currentCategory;
+                            return ListTile(
+                              leading: Icon(cat.icon,
+                                  color: cat.group.color, size: 22),
+                              title: Text(cat.displayName),
+                              subtitle: _searchText.isNotEmpty
+                                  ? Text(cat.group.displayName,
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: theme.colorScheme.outline))
+                                  : null,
+                              trailing: isCurrentSelected
+                                  ? Icon(Icons.check,
+                                      color: theme.colorScheme.primary)
+                                  : null,
+                              dense: true,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              selected: isCurrentSelected,
+                              onTap: () => widget.onSelected(cat),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

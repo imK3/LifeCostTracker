@@ -45,7 +45,7 @@ class AddCostItemViewModel extends ChangeNotifier {
   BillingCycle _billingCycle = BillingCycle.monthly; // 实际账单周期
   CostCategory _category = CostCategory.other;
   int _dueDay = 1; // 每月几号到期
-  bool _alreadyPaid = false; // 本期是否已支付
+  DateTime? _lastPaidDate; // 上次支付日期
 
   // State - installment plan fields
   double _totalAmount = 0;
@@ -71,7 +71,7 @@ class AddCostItemViewModel extends ChangeNotifier {
       _amount * _billingCycle.multiplierFrom(_basePeriod);
   CostCategory get category => _category;
   int get dueDay => _dueDay;
-  bool get alreadyPaid => _alreadyPaid;
+  DateTime? get lastPaidDate => _lastPaidDate;
   double get totalAmount => _totalAmount;
   int get totalPeriods => _totalPeriods;
   double get monthlyPayment => _monthlyPayment;
@@ -138,8 +138,8 @@ class AddCostItemViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setAlreadyPaid(bool value) {
-    _alreadyPaid = value;
+  void setLastPaidDate(DateTime? value) {
+    _lastPaidDate = value;
     notifyListeners();
   }
 
@@ -207,6 +207,9 @@ class AddCostItemViewModel extends ChangeNotifier {
         // Calculate next due date based on billingCycle and dueDay
         final nextDue = _calculateNextDueDate(now);
 
+        // 如果有上次支付日期且 nextDue 在未来，说明本期已支付
+        final isPaid = _lastPaidDate != null && nextDue.isAfter(now);
+
         final cost = RecurringCost(
           name: _name.trim(),
           amount: _amount,
@@ -215,7 +218,7 @@ class AddCostItemViewModel extends ChangeNotifier {
           category: _category,
           startDate: now,
           nextDueDate: nextDue,
-          isPaidForCurrentPeriod: _alreadyPaid,
+          isPaidForCurrentPeriod: isPaid,
           notes: _notes,
         );
         await _addRecurringCostUseCase.call(cost);
@@ -244,37 +247,64 @@ class AddCostItemViewModel extends ChangeNotifier {
   /// Calculate next due date based on billing cycle and dueDay input
   /// 根据账单周期和到期日输入计算下一个到期日
   ///
-  /// dueDay 的含义随 billingCycle 变化：
-  /// - weekly: 周几（1-7）
-  /// - monthly/quarterly: 几号（1-31）
-  /// - yearly: 几月（1-12）
+  /// 如果提供了上次支付日期，从该日期推算下次到期日
+  /// 否则根据 dueDay 计算（dueDay 含义随 billingCycle 变化）
   DateTime _calculateNextDueDate(DateTime now) {
+    // 如果有上次支付日期，从该日期推算下一个到期日
+    if (_lastPaidDate != null) {
+      final paid = _lastPaidDate!;
+      DateTime nextDue;
+      switch (_billingCycle) {
+        case BillingCycle.weekly:
+          nextDue = DateTime(paid.year, paid.month, paid.day + 7);
+        case BillingCycle.monthly:
+          nextDue = DateTime(paid.year, paid.month + 1, paid.day);
+        case BillingCycle.quarterly:
+          nextDue = DateTime(paid.year, paid.month + 3, paid.day);
+        case BillingCycle.yearly:
+          nextDue = DateTime(paid.year + 1, paid.month, paid.day);
+      }
+      // 如果推算出的下次到期日已过，继续往前推
+      while (nextDue.isBefore(now)) {
+        switch (_billingCycle) {
+          case BillingCycle.weekly:
+            nextDue = DateTime(nextDue.year, nextDue.month, nextDue.day + 7);
+          case BillingCycle.monthly:
+            nextDue = DateTime(nextDue.year, nextDue.month + 1, nextDue.day);
+          case BillingCycle.quarterly:
+            nextDue = DateTime(nextDue.year, nextDue.month + 3, nextDue.day);
+          case BillingCycle.yearly:
+            nextDue = DateTime(nextDue.year + 1, nextDue.month, nextDue.day);
+        }
+      }
+      return nextDue;
+    }
+
+    // 没有上次支付日期，根据 dueDay 计算
     switch (_billingCycle) {
       case BillingCycle.weekly:
-        // dueDay = 1(周一) ~ 7(周日)
-        final currentWeekday = now.weekday; // 1=Mon, 7=Sun
+        final currentWeekday = now.weekday;
         var daysUntil = _dueDay - currentWeekday;
-        if (daysUntil <= 0 || _alreadyPaid) daysUntil += 7;
+        if (daysUntil <= 0) daysUntil += 7;
         return DateTime(now.year, now.month, now.day + daysUntil);
 
       case BillingCycle.monthly:
         var nextDue = DateTime(now.year, now.month, _dueDay);
-        if (nextDue.isBefore(now) || _alreadyPaid) {
+        if (nextDue.isBefore(now)) {
           nextDue = DateTime(now.year, now.month + 1, _dueDay);
         }
         return nextDue;
 
       case BillingCycle.quarterly:
         var nextDue = DateTime(now.year, now.month, _dueDay);
-        if (nextDue.isBefore(now) || _alreadyPaid) {
+        if (nextDue.isBefore(now)) {
           nextDue = DateTime(now.year, now.month + 3, _dueDay);
         }
         return nextDue;
 
       case BillingCycle.yearly:
-        // dueDay = month (1-12), pay on the 1st of that month
         var nextDue = DateTime(now.year, _dueDay, 1);
-        if (nextDue.isBefore(now) || _alreadyPaid) {
+        if (nextDue.isBefore(now)) {
           nextDue = DateTime(now.year + 1, _dueDay, 1);
         }
         return nextDue;
@@ -291,7 +321,7 @@ class AddCostItemViewModel extends ChangeNotifier {
     _billingCycle = BillingCycle.monthly;
     _category = CostCategory.other;
     _dueDay = 1;
-    _alreadyPaid = false;
+    _lastPaidDate = null;
     _totalAmount = 0;
     _totalPeriods = 12;
     _monthlyPayment = 0;

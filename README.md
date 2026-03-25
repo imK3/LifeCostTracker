@@ -54,9 +54,66 @@ flutter pub get
 flutter run
 ```
 
+## iOS 真机部署
+
+### 环境准备
+
+```bash
+# 安装 CocoaPods
+brew install cocoapods
+
+# 配置 Xcode（需要完整版 Xcode，非 Command Line Tools）
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+sudo xcodebuild -runFirstLaunch
+
+# 下载 iOS SDK（如果 Xcode 缺少 iOS 平台）
+xcodebuild -downloadPlatform iOS
+
+# 验证环境
+flutter doctor
+```
+
+### 安装到 iPhone（USB 连接）
+
+```bash
+cd life_cost_tracker
+flutter run --release
+```
+
+### 打包 IPA（用于 AltStore 侧载）
+
+```bash
+cd life_cost_tracker
+
+# 不签名打包（后续通过 AltStore 签名安装）
+flutter build ipa --release --no-codesign
+
+# 产物位置：build/ios/archive/Runner.xcarchive
+```
+
+### 通过 Xcode 安装
+
+```bash
+open ios/Runner.xcworkspace
+```
+1. 左上角选择 iPhone 设备
+2. Signing & Capabilities → 选择你的 Apple ID Team
+3. 点击 Run (▶)
+
+### 首次运行注意
+
+iPhone 上信任开发者证书：**设置 → 通用 → VPN与设备管理 → 信任**
+
+### 免费签名说明
+
+- 免费 Apple ID 签名有效期 **7 天**，过期需重新安装
+- 同时最多签 **3 个 App**
+- 推荐使用 [AltStore](https://altstore.io/) 自动续签
+- 同一 Apple ID 重签不影响 App 数据
+
 ## License
 
 MIT License
 
 ---
-*Last updated: 2026-03-12*
+*Last updated: 2026-03-25*
