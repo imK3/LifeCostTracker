@@ -2,26 +2,30 @@
 
 # LifeCostTracker
 
-**每天醒来，你就欠了这么多钱**
+**这不是记账，这是你未来的账本**
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.41+-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.11+-0175C2?logo=dart)](https://dart.dev)
 [![Platform](https://img.shields.io/badge/Platform-iOS-lightgrey?logo=apple)](https://www.apple.com/ios)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-一款通过「睡后成本」视角管理个人固定支出的 App
-
-*你的生活燃烧率是多少？*
+看清你的固定支出全貌，掌控未来每一笔确定的花销
 
 </div>
 
 ---
 
-## What is 睡后成本？
+## 为什么做这个？
 
-「睡后收入」人人追求，但你知道你的**睡后成本**是多少吗？
+记账软件记录的是**过去** —— 钱花了才记一笔，然后呢？
 
-每天睁开眼睛，房租、水电、订阅、分期……这些固定支出已经在消耗你的钱包。LifeCostTracker 帮你把这个数字**可视化**，让每一笔消费决策都有据可依。
+但你的生活中有大量**已经确定的支出**：房租、保险、订阅、分期付款……这些钱不管你记不记，到期都得付。真正有意义的问题不是「上个月花了多少」，而是：
+
+> **我到底背着多少周期性支出？什么时候要付？加起来有多大？**
+
+LifeCostTracker 回答的就是这三个问题。它不看过去，只看未来 —— 把你所有确定要发生的支出铺开在面前，让你像编辑一本账本一样，**主动规划和调整**自己的固定开支结构。
+
+少一笔订阅，每天省下多少？再背一笔分期，生活质量会怎样？答案不用猜，算给你看。
 
 ## Features
 
