@@ -13,6 +13,7 @@ import '../../domain/entities/recurring_cost.dart';
 import '../../domain/entities/installment_plan.dart';
 import 'add_cost_item_sheet.dart';
 import 'cost_item_detail_view.dart';
+import 'happiness_research_page.dart';
 
 class HomeDashboardView extends StatefulWidget {
   const HomeDashboardView({super.key});
@@ -50,6 +51,14 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 SliverAppBar(
                   expandedHeight: 60,
                   floating: true,
+                  leading: IconButton(
+                    icon: const Icon(Icons.psychology_outlined),
+                    tooltip: '幸福感说明',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const HappinessResearchPage()),
+                    ),
+                  ),
                   title: const Text('睡后成本'),
                   actions: [
                     // Display cycle toggle
@@ -277,9 +286,135 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 ),
             ],
           ),
+
+          // 幸福感指示器
+          const SizedBox(height: 16),
+          _buildHappinessIndicator(context, vm, settings),
         ],
       ),
     );
+  }
+
+  Widget _buildHappinessIndicator(
+    BuildContext context,
+    SleepCostDashboardViewModel vm,
+    SettingsViewModel settings,
+  ) {
+    final ratio = settings.costRatio(vm.summary.totalDailyCost);
+    final level = SettingsViewModel.happinessFromRatio(ratio);
+    final score = SettingsViewModel.happinessScore(ratio);
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: () => _showIncomeDialog(context, settings),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (settings.hasIncome) ...[
+              // 评分数字
+              Text(
+                '$score',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: SettingsViewModel.scoreColor(score),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text('分', style: TextStyle(
+                fontSize: 11,
+                color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.5),
+              )),
+            ] else
+              Text(level.emoji, style: const TextStyle(fontSize: 22)),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  settings.hasIncome
+                      ? '${level.emoji} ${level.label}'
+                      : level.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: settings.hasIncome
+                        ? level.color
+                        : theme.colorScheme.onPrimaryContainer
+                            .withValues(alpha: 0.5),
+                  ),
+                ),
+                if (settings.hasIncome)
+                  Text(
+                    '固定支出占收入 ${(ratio * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: theme.colorScheme.onPrimaryContainer
+                          .withValues(alpha: 0.6),
+                    ),
+                  ),
+              ],
+            ),
+            const Spacer(),
+            Icon(
+              Icons.edit_outlined,
+              size: 16,
+              color: theme.colorScheme.onPrimaryContainer
+                  .withValues(alpha: 0.4),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showIncomeDialog(BuildContext context, SettingsViewModel settings) {
+    final controller = TextEditingController(
+      text: settings.monthlyIncome > 0
+          ? settings.monthlyIncome.toStringAsFixed(0)
+          : '',
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('设置月收入'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '税后月收入',
+            prefixText: '¥ ',
+            border: OutlineInputBorder(),
+            helperText: '用于计算固定支出占比和幸福感指数',
+          ),
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = double.tryParse(
+                      controller.text.replaceAll(',', '.')) ??
+                  0;
+              settings.setMonthlyIncome(value);
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose;
   }
 
   Widget _buildMiniStat(

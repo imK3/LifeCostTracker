@@ -1,51 +1,55 @@
-# LifeCostTracker - 睡后成本追踪器
+# LifeCostTracker
 
-> **每天醒来，你就欠了这么多钱** - 通过睡后成本视角管理个人财务
+> **每天醒来，你就欠了这么多钱**
 
-## 核心理念
+一款通过「睡后成本」视角管理个人固定支出的 iOS App。帮你看清每天一睁眼就在消耗的钱，做出更理性的消费决策。
 
-"睡后收入"人人追求，但你知道你的**"睡后成本"**是多少吗？
+## 功能亮点
 
-每天睁开眼睛，房租、水电、订阅、分期……这些固定支出已经在消耗你的钱包。LifeCostTracker 帮你看清这个数字，并做出更理性的消费决策。
+### 睡后成本 Dashboard
+实时展示你的生活燃烧率 —— 按日/月/季/年灵活切换，一眼看清固定支出总额和分类占比。
 
-## 核心功能
+### 缴费日历
+月历视图查看所有缴费计划。每个到期日标注金额，点击查看当天具体项目。支持周付/月付/季付/年付和分期。
 
-- **睡后成本 Dashboard**: 醒来就看到今天/本月/今年的固定支出
-- **三大成本分类**:
-  - 固定生活成本（房租、水电、停车、伙食）
-  - 订阅费用（Claude、iCloud、视频会员、话费）
-  - 分期承诺（手机分期、贷款等有终点的还款）
-- **承担能力模拟器**: "如果我买了这个，我的睡后成本会变成多少？"
-- **灵活展示周期**: 按日/月/年查看成本
-- **可视化**: 饼图展示成本结构，进度条追踪分期还款
+### 幸福感评分
+基于固定支出占收入比例的 0-100 分评分体系。分项健康度可视化，一眼看出哪个分类超标。附带研究说明和改善建议。
 
-## Tech Stack
+### 承担能力模拟
+「如果我再买一个…」—— 输入金额即时模拟对每日成本和幸福感评分的影响，帮你在冲动消费前冷静判断。
 
-- **Framework**: Flutter (iOS + Android + Web + macOS)
-- **Language**: Dart 3.5+
+### 智能缴费追踪
+到期日过后自动视为已缴并推进到下一期。支持提前标记已缴，后续仍按原计划执行。左滑即可标记付款。
+
+### 双周期账单模型
+分离「心智周期」和「实际付款周期」。月租 4500 但按季付？系统自动换算，两种视角都能看。
+
+## 分类体系
+
+8 大类 · 26 子分类，覆盖日常固定支出场景：
+
+| 大类 | 子分类 |
+|------|--------|
+| 居住 | 房租、房贷、水电煤、物业费、停车费 |
+| 交通 | 车贷、车险、通勤月卡、加油 |
+| 生活 | 日常伙食、日用品 |
+| 通信 | 话费、宽带 |
+| 数字订阅 | 流媒体、生产力工具、云服务、游戏会员 |
+| 医疗健康 | 保险、健身、医疗体检 |
+| 教育 | 培训网课、书籍订阅 |
+| 其他 | 宠物、人情往来、其他 |
+
+## 技术栈
+
+- **Framework**: Flutter 3.41+
+- **Language**: Dart 3.11+
 - **Architecture**: Clean Architecture + MVVM
 - **State Management**: Provider
-- **Local Storage**: Hive (NoSQL)
+- **Local Storage**: Hive
 - **Charts**: fl_chart
-- **Target Platforms**: iOS 14.0+, Android 6.0+
+- **Platform**: iOS 13.0+
 
-## Project Structure
-
-```
-life_cost_tracker/lib/
-├── domain/
-│   ├── entities/          # RecurringCost, InstallmentPlan, AffordabilityItem, SleepCostSummary
-│   ├── repositories/      # Repository interfaces
-│   └── usecases/          # CalculateSleepCost, SimulateAffordability, CRUD use cases
-├── data/
-│   ├── adapters/          # Hive TypeAdapters
-│   └── repositories/      # Hive repository implementations
-└── presentation/
-    ├── viewmodels/        # SleepCostDashboard, AddCostItem, AffordabilitySimulator, etc.
-    └── views/             # Dashboard, AddCostItemSheet, Simulator, Settings, Detail
-```
-
-## Getting Started
+## 快速开始
 
 ```bash
 git clone https://github.com/imK3/LifeCostTracker.git
@@ -54,66 +58,15 @@ flutter pub get
 flutter run
 ```
 
-## iOS 真机部署
+详细的开发指南和 iOS 部署说明见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。
 
-### 环境准备
+## 截图
 
-```bash
-# 安装 CocoaPods
-brew install cocoapods
-
-# 配置 Xcode（需要完整版 Xcode，非 Command Line Tools）
-sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
-sudo xcodebuild -runFirstLaunch
-
-# 下载 iOS SDK（如果 Xcode 缺少 iOS 平台）
-xcodebuild -downloadPlatform iOS
-
-# 验证环境
-flutter doctor
-```
-
-### 安装到 iPhone（USB 连接）
-
-```bash
-cd life_cost_tracker
-flutter run --release
-```
-
-### 打包 IPA（用于 AltStore 侧载）
-
-```bash
-cd life_cost_tracker
-
-# 不签名打包（后续通过 AltStore 签名安装）
-flutter build ipa --release --no-codesign
-
-# 产物位置：build/ios/archive/Runner.xcarchive
-```
-
-### 通过 Xcode 安装
-
-```bash
-open ios/Runner.xcworkspace
-```
-1. 左上角选择 iPhone 设备
-2. Signing & Capabilities → 选择你的 Apple ID Team
-3. 点击 Run (▶)
-
-### 首次运行注意
-
-iPhone 上信任开发者证书：**设置 → 通用 → VPN与设备管理 → 信任**
-
-### 免费签名说明
-
-- 免费 Apple ID 签名有效期 **7 天**，过期需重新安装
-- 同时最多签 **3 个 App**
-- 推荐使用 [AltStore](https://altstore.io/) 自动续签
-- 同一 Apple ID 重签不影响 App 数据
+*（待补充）*
 
 ## License
 
 MIT License
 
 ---
-*Last updated: 2026-03-25*
+*v2.0 · 2026-03-26*

@@ -68,7 +68,10 @@ class RecurringCost {
   double get dailyCost => amount / basePeriod.daysInCycle;
 
   /// Calculate monthly equivalent cost
-  double get monthlyCost => dailyCost * 30;
+  double get monthlyCost {
+    final now = DateTime.now();
+    return dailyCost * DateTime(now.year, now.month + 1, 0).day;
+  }
 
   /// Calculate yearly equivalent cost
   double get yearlyCost => dailyCost * 365;

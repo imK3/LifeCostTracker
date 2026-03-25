@@ -10,6 +10,43 @@ import '../../domain/entities/display_cycle.dart';
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
 
+  void _showIncomeDialog(BuildContext context, SettingsViewModel vm) {
+    final controller = TextEditingController(
+      text: vm.monthlyIncome > 0 ? vm.monthlyIncome.toStringAsFixed(0) : '',
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('设置月收入'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '税后月收入',
+            prefixText: '¥ ',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = double.tryParse(
+                      controller.text.replaceAll(',', '.')) ?? 0;
+              vm.setMonthlyIncome(value);
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,6 +96,32 @@ class SettingsView extends StatelessWidget {
                   },
                 ),
               ),
+
+              const Divider(),
+
+              const _SectionHeader(title: '收入设置'),
+
+              ListTile(
+                leading: const Icon(Icons.account_balance_wallet),
+                title: const Text('税后月收入'),
+                subtitle: Text(vm.hasIncome
+                    ? '¥${vm.monthlyIncome.toStringAsFixed(0)}'
+                    : '未设置'),
+                trailing: const Icon(Icons.edit_outlined, size: 20),
+                onTap: () => _showIncomeDialog(context, vm),
+              ),
+
+              if (vm.hasIncome)
+                ListTile(
+                  leading: Text(
+                    SettingsViewModel.happinessFromRatio(
+                            vm.costRatio(0))
+                        .emoji,
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                  title: const Text('幸福感参考'),
+                  subtitle: const Text('≤40% 很好 · ≤55% 从容 · ≤70% 平衡 · >70% 紧张'),
+                ),
 
               const Divider(),
 
