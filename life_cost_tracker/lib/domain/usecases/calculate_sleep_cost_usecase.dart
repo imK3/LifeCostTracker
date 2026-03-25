@@ -5,6 +5,8 @@
 import 'base_usecase.dart';
 import '../entities/sleep_cost_summary.dart';
 import '../entities/cost_category.dart';
+import '../entities/recurring_cost.dart';
+import '../entities/installment_plan.dart';
 import '../repositories/recurring_cost_repository.dart';
 import '../repositories/installment_plan_repository.dart';
 
@@ -14,7 +16,10 @@ import '../repositories/installment_plan_repository.dart';
 /// 所有 active 的周期性成本都计入，不管本期是否已支付。
 /// 只有 isActive=false（退租、取消订阅）才不算。
 ///
-/// 已付/未付状态仅用于 UI 展示（缴费追踪、到期提醒）。
+/// **自动推进规则**：
+/// - 到期日已过 → 自动视为已缴，nextDueDate 推进到下一期
+/// - 提前手动标记已缴 → isPaidForCurrentPeriod=true，到期日不变
+/// - 到期日过后，即使是提前缴的，也正常推进到下一期
 class CalculateSleepCostUseCase
     implements BaseUseCase<SleepCostSummary, NoParams> {
   final RecurringCostRepository recurringCostRepository;
@@ -31,11 +36,65 @@ class CalculateSleepCostUseCase
     final installments =
         await installmentPlanRepository.getInstallmentPlans();
 
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // 自动推进过期的周期性项
+    final processedRecurring = <RecurringCost>[];
+    for (final item in recurringCosts) {
+      if (!item.isActive) {
+        processedRecurring.add(item);
+        continue;
+      }
+      var current = item;
+      bool advanced = false;
+      // 到期日严格在今天之前（不含当天） → 自动推进
+      while (DateTime(current.nextDueDate.year, current.nextDueDate.month,
+              current.nextDueDate.day)
+          .isBefore(today)) {
+        current = current.copyWith(
+          nextDueDate: current.nextPeriodDueDate,
+          isPaidForCurrentPeriod: false,
+        );
+        advanced = true;
+      }
+      if (advanced) {
+        await recurringCostRepository.updateRecurringCost(current);
+      }
+      processedRecurring.add(current);
+    }
+
+    // 自动推进过期的分期项
+    final processedInstallments = <InstallmentPlan>[];
+    for (final item in installments) {
+      if (item.isCompleted) {
+        processedInstallments.add(item);
+        continue;
+      }
+      var current = item;
+      bool advanced = false;
+      while (DateTime(current.nextDueDate.year, current.nextDueDate.month,
+                  current.nextDueDate.day)
+              .isBefore(today) &&
+          !current.isCompleted) {
+        current = current.copyWith(
+          paidPeriods: current.paidPeriods + 1,
+          nextDueDate: current.nextPeriodDueDate,
+          isPaidForCurrentPeriod: false,
+        );
+        advanced = true;
+      }
+      if (advanced) {
+        await installmentPlanRepository.updateInstallmentPlan(current);
+      }
+      processedInstallments.add(current);
+    }
+
     // Only active items count
     final activeRecurring =
-        recurringCosts.where((c) => c.isActive).toList();
+        processedRecurring.where((c) => c.isActive).toList();
     final activeInstallments =
-        installments.where((i) => !i.isCompleted).toList();
+        processedInstallments.where((i) => !i.isCompleted).toList();
 
     // Split by payment status
     final unpaidItems =

@@ -31,8 +31,9 @@ class RecurringCostAdapter extends TypeAdapter<RecurringCost> {
       id: id,
       name: name,
       amount: amount,
-      basePeriod:
-          basePeriodIndex >= 0 ? BillingCycle.values[basePeriodIndex] : null,
+      basePeriod: basePeriodIndex >= 0 && basePeriodIndex < BillingCycle.values.length
+          ? BillingCycle.values[basePeriodIndex]
+          : null,
       billingCycle: billingCycle,
       category: category,
       startDate: startDate,

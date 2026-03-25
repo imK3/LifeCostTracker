@@ -6,6 +6,7 @@
 import 'package:uuid/uuid.dart';
 import 'billing_cycle.dart';
 import 'cost_category.dart';
+import 'date_utils.dart';
 
 /// Recurring cost entity - represents any periodic expense
 /// 周期性成本实体 - 代表任何周期性支出
@@ -111,23 +112,11 @@ class RecurringCost {
           nextDueDate.day + 7,
         );
       case BillingCycle.monthly:
-        return DateTime(
-          nextDueDate.year,
-          nextDueDate.month + 1,
-          nextDueDate.day,
-        );
+        return addMonths(nextDueDate, 1);
       case BillingCycle.quarterly:
-        return DateTime(
-          nextDueDate.year,
-          nextDueDate.month + 3,
-          nextDueDate.day,
-        );
+        return addMonths(nextDueDate, 3);
       case BillingCycle.yearly:
-        return DateTime(
-          nextDueDate.year + 1,
-          nextDueDate.month,
-          nextDueDate.day,
-        );
+        return addMonths(nextDueDate, 12);
     }
   }
 

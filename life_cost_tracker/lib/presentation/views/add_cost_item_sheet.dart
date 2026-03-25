@@ -21,10 +21,13 @@ class AddCostItemSheet extends StatelessWidget {
           maxChildSize: 0.95,
           expand: false,
           builder: (context, scrollController) {
-            return Container(
+            return GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: Container(
               padding: const EdgeInsets.all(16),
               child: ListView(
                 controller: scrollController,
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [
                   // Handle bar
                   Center(
@@ -120,9 +123,9 @@ class AddCostItemSheet extends StatelessWidget {
                           border: const OutlineInputBorder(),
                           prefixText: '¥ ',
                         ),
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         onChanged: (v) =>
-                            vm.setAmount(double.tryParse(v) ?? 0),
+                            vm.setAmount(AddCostItemViewModel.parseNumber(v) ?? 0),
                       ),
                       const SizedBox(height: 16),
 
@@ -186,7 +189,7 @@ class AddCostItemSheet extends StatelessWidget {
                           border: const OutlineInputBorder(),
                           suffixText: vm.billingCycle.dueDateSuffix,
                         ),
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         onChanged: (v) =>
                             vm.setDueDay(int.tryParse(v) ?? 1),
                       ),
@@ -198,48 +201,147 @@ class AddCostItemSheet extends StatelessWidget {
 
                     if (vm.selectedType ==
                         AddCostItemType.installment) ...[
-                      // Total amount
+                      // Monthly payment
                       TextField(
                         decoration: const InputDecoration(
-                          labelText: '总金额',
-                          hintText: '商品总价',
+                          labelText: '每月还款',
+                          hintText: '每期还多少',
                           border: OutlineInputBorder(),
                           prefixText: '¥ ',
                         ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (v) =>
-                            vm.setTotalAmount(double.tryParse(v) ?? 0),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        onChanged: (v) => vm.setMonthlyPayment(
+                            AddCostItemViewModel.parseNumber(v) ?? 0),
                       ),
                       const SizedBox(height: 16),
 
                       // Total periods
                       TextField(
                         decoration: const InputDecoration(
-                          labelText: '分期期数',
+                          labelText: '总期数',
                           hintText: '例如：12',
                           border: OutlineInputBorder(),
                           suffixText: '期',
                         ),
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         onChanged: (v) =>
                             vm.setTotalPeriods(int.tryParse(v) ?? 0),
                       ),
+
+                      // 总金额预览
+                      if (vm.monthlyPayment > 0 && vm.totalPeriods > 0) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline,
+                                  size: 16, color: Colors.blue.shade700),
+                              const SizedBox(width: 8),
+                              Text(
+                                '总金额 ¥${(vm.monthlyPayment * vm.totalPeriods).toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  color: Colors.blue.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
 
-                      // Monthly payment (auto-calculated)
-                      TextField(
-                        decoration: InputDecoration(
-                          labelText: '每月还款',
-                          hintText: vm.monthlyPayment > 0
-                              ? vm.monthlyPayment.toStringAsFixed(2)
-                              : '自动计算或手动输入',
-                          border: const OutlineInputBorder(),
-                          prefixText: '¥ ',
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (v) => vm.setMonthlyPayment(
-                            double.tryParse(v) ?? 0),
+                      // 已支付/尚未支付 切换
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ChoiceChip(
+                              label: const Text('已有还款'),
+                              selected: vm.installmentHasPaid,
+                              onSelected: (_) =>
+                                  vm.setInstallmentHasPaid(true),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ChoiceChip(
+                              label: const Text('尚未支付'),
+                              selected: !vm.installmentHasPaid,
+                              onSelected: (_) =>
+                                  vm.setInstallmentHasPaid(false),
+                            ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 16),
+
+                      if (vm.installmentHasPaid) ...[
+                        // 已支付期数
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: '已支付期数',
+                            hintText: '已还了几期',
+                            border: OutlineInputBorder(),
+                            suffixText: '期',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          onChanged: (v) => vm.setInstallmentPaidPeriods(
+                              int.tryParse(v) ?? 0),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // 上次还款日期
+                        _buildInstallmentLastPaidDate(context, vm),
+                      ],
+
+                      if (!vm.installmentHasPaid) ...[
+                        // 还款日（每月几号）
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: '每月还款日',
+                            hintText: '每月几号扣款',
+                            border: OutlineInputBorder(),
+                            suffixText: '号',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          onChanged: (v) => vm.setInstallmentDueDay(
+                              int.tryParse(v) ?? 1),
+                        ),
+                      ],
+
+                      // 剩余期数提示
+                      if (vm.installmentHasPaid &&
+                          vm.totalPeriods > 0 &&
+                          vm.installmentPaidPeriods > 0) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle_outline,
+                                  size: 16, color: Colors.green.shade700),
+                              const SizedBox(width: 8),
+                              Text(
+                                '已还 ${vm.installmentPaidPeriods}/${vm.totalPeriods} 期，剩余 ${vm.totalPeriods - vm.installmentPaidPeriods} 期',
+                                style: TextStyle(
+                                  color: Colors.green.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
 
                     const SizedBox(height: 16),
@@ -329,6 +431,7 @@ class AddCostItemSheet extends StatelessWidget {
                   ],
                 ],
               ),
+            ),
             );
           },
         );
@@ -353,6 +456,9 @@ class AddCostItemSheet extends StatelessWidget {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () async {
+                  FocusScope.of(context).unfocus();
+                  await Future.delayed(const Duration(milliseconds: 200));
+                  if (!context.mounted) return;
                   final picked = await showDatePicker(
                     context: context,
                     initialDate: vm.lastPaidDate ?? DateTime.now(),
@@ -397,6 +503,66 @@ class AddCostItemSheet extends StatelessWidget {
     );
   }
 
+  /// 分期 - 上次还款日期选择器
+  Widget _buildInstallmentLastPaidDate(
+      BuildContext context, AddCostItemViewModel vm) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '上次还款日期',
+          style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  FocusScope.of(context).unfocus();
+                  await Future.delayed(const Duration(milliseconds: 200));
+                  if (!context.mounted) return;
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: vm.installmentLastPaidDate ?? DateTime.now(),
+                    firstDate:
+                        DateTime.now().subtract(const Duration(days: 730)),
+                    lastDate: DateTime.now(),
+                    helpText: '选择上次还款日期',
+                  );
+                  if (picked != null) {
+                    vm.setInstallmentLastPaidDate(picked);
+                  }
+                },
+                icon: const Icon(Icons.calendar_today, size: 18),
+                label: Text(
+                  vm.installmentLastPaidDate != null
+                      ? '${vm.installmentLastPaidDate!.year}-${vm.installmentLastPaidDate!.month.toString().padLeft(2, '0')}-${vm.installmentLastPaidDate!.day.toString().padLeft(2, '0')}'
+                      : '选择日期',
+                ),
+                style: OutlinedButton.styleFrom(
+                  alignment: Alignment.centerLeft,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                ),
+              ),
+            ),
+            if (vm.installmentLastPaidDate != null) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => vm.setInstallmentLastPaidDate(null),
+                icon: const Icon(Icons.clear, size: 20),
+                tooltip: '清除',
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
   /// 分类选择器 - 点击弹出二级菜单
   Widget _buildCategoryPicker(
       BuildContext context, AddCostItemViewModel vm) {
@@ -429,7 +595,7 @@ class AddCostItemSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
-        return _CategoryPickerContent(
+        return CategoryPickerContent(
           currentCategory: vm.category,
           onSelected: (cat) {
             vm.setCategory(cat);
@@ -498,21 +664,21 @@ class AddCostItemSheet extends StatelessWidget {
 }
 
 /// 二级分类选择器内容（StatefulWidget 管理选中的 group）
-class _CategoryPickerContent extends StatefulWidget {
+class CategoryPickerContent extends StatefulWidget {
   final CostCategory currentCategory;
   final ValueChanged<CostCategory> onSelected;
 
-  const _CategoryPickerContent({
+  const CategoryPickerContent({
     required this.currentCategory,
     required this.onSelected,
   });
 
   @override
-  State<_CategoryPickerContent> createState() =>
+  State<CategoryPickerContent> createState() =>
       _CategoryPickerContentState();
 }
 
-class _CategoryPickerContentState extends State<_CategoryPickerContent> {
+class _CategoryPickerContentState extends State<CategoryPickerContent> {
   late CostCategoryGroup _selectedGroup;
   String _searchText = '';
 

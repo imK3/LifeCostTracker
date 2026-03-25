@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'home_dashboard_view.dart';
+import 'payment_calendar_view.dart';
 import 'affordability_simulator_view.dart';
 import 'settings_view.dart';
 
@@ -19,6 +20,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _screens = const [
     HomeDashboardView(),
+    PaymentCalendarView(),
     AffordabilitySimulatorView(),
     SettingsView(),
   ];
@@ -42,6 +44,11 @@ class _MainNavigationState extends State<MainNavigation> {
             icon: Icon(Icons.bedtime_outlined),
             selectedIcon: Icon(Icons.bedtime),
             label: '睡后成本',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: '缴费日历',
           ),
           NavigationDestination(
             icon: Icon(Icons.calculate_outlined),

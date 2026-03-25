@@ -11,7 +11,6 @@ import '../viewmodels/settings_view_model.dart';
 import '../../domain/entities/display_cycle.dart';
 import '../../domain/entities/recurring_cost.dart';
 import '../../domain/entities/installment_plan.dart';
-import '../../domain/entities/cost_category.dart';
 import 'add_cost_item_sheet.dart';
 import 'cost_item_detail_view.dart';
 
@@ -112,53 +111,39 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                     ),
                   ),
 
-                // Overdue items
-                if (vm.summary.overdueItems.isNotEmpty)
-                  _buildCostSection(
+                // Overdue items (recurring + installment)
+                if (vm.summary.overdueItems.isNotEmpty ||
+                    vm.summary.installmentOverdueItems.isNotEmpty)
+                  _buildUnifiedCostSection(
                     context,
                     title: '已逾期',
-                    subtitle: '${settings.currency}${vm.summary.overdueAmount.toStringAsFixed(0)}',
+                    subtitle: '${settings.currency}${(vm.summary.overdueAmount + vm.summary.installmentOverdueAmount).toStringAsFixed(0)}',
                     color: Colors.red,
-                    items: vm.summary.overdueItems,
+                    recurringItems: vm.summary.overdueItems,
+                    installmentItems: vm.summary.installmentOverdueItems,
                     vm: vm,
                     settings: settings,
                   ),
 
-                // Due this month
-                if (vm.summary.dueThisMonth.isNotEmpty)
-                  _buildCostSection(
+                // Due this month (recurring + installment)
+                if (vm.summary.dueThisMonth.isNotEmpty ||
+                    vm.summary.installmentDueThisMonth.isNotEmpty)
+                  _buildUnifiedCostSection(
                     context,
                     title: '本月待缴',
-                    subtitle: '${settings.currency}${vm.summary.dueThisMonthAmount.toStringAsFixed(0)}',
+                    subtitle: '${settings.currency}${(vm.summary.dueThisMonthAmount + vm.summary.installmentDueThisMonthAmount).toStringAsFixed(0)}',
                     color: Colors.orange,
-                    items: vm.summary.dueThisMonth,
+                    recurringItems: vm.summary.dueThisMonth,
+                    installmentItems: vm.summary.installmentDueThisMonth,
                     vm: vm,
                     settings: settings,
                   ),
 
-                // Due later
-                if (vm.summary.dueLater.isNotEmpty)
-                  _buildCostSection(
-                    context,
-                    title: '未来待缴',
-                    subtitle: '',
-                    color: Colors.grey,
-                    items: vm.summary.dueLater,
-                    vm: vm,
-                    settings: settings,
-                  ),
-
-                // Installment Plans Section
-                if (vm.summary.installmentItems.isNotEmpty)
-                  _buildInstallmentSection(context, vm, settings),
-
-                // Paid items section
-                if (vm.summary.paidItems.isNotEmpty)
-                  _buildPaidItemsList(
-                    context,
-                    vm.summary.paidItems,
-                    vm,
-                    settings,
+                // Paid items section (recurring + installment)
+                if (vm.summary.paidItems.isNotEmpty ||
+                    vm.summary.installmentMonthlyPaid.isNotEmpty)
+                  _buildUnifiedPaidSection(
+                    context, vm, settings,
                   ),
 
                 // Empty state
@@ -345,7 +330,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     final summary = vm.summary;
     final now = DateTime.now();
     final paid = summary.paidAmount;
-    final unpaid = summary.overdueAmount + summary.dueThisMonthAmount;
+    final unpaid = summary.totalDueAmount - paid;
     final progress = summary.paymentProgress;
 
     return Container(
@@ -372,7 +357,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               ),
               const Spacer(),
               Text(
-                '${summary.paidItems.length}/${summary.allRecurringItems.length} 项已付',
+                '${summary.monthlyPaidCount}/${summary.monthlyTrackableCount} 项已付',
                 style: TextStyle(
                   fontSize: 13,
                   color: theme.colorScheme.outline,
@@ -586,15 +571,61 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     );
   }
 
-  SliverList _buildCostSection(
+  void _showAddCostSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => const AddCostItemSheet(),
+    ).then((_) {
+      context.read<SleepCostDashboardViewModel>().loadDashboardData();
+    });
+  }
+
+
+  Future<void> _markAsPaid(BuildContext context, RecurringCost item) async {
+    final detailVm = context.read<CostItemDetailViewModel>();
+    final paid = item.payAndAdvance();
+    await detailVm.updateRecurringCost(paid);
+    if (context.mounted) {
+      context.read<SleepCostDashboardViewModel>().loadDashboardData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('「${item.name}」已标记为已支付'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _markInstallmentAsPaid(
+      BuildContext context, InstallmentPlan item) async {
+    final detailVm = context.read<CostItemDetailViewModel>();
+    final paid = item.payAndAdvance();
+    await detailVm.updateInstallmentPlan(paid);
+    if (context.mounted) {
+      context.read<SleepCostDashboardViewModel>().loadDashboardData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('「${item.name}」已标记为已支付（${item.paidPeriods + 1}/${item.totalPeriods}期）'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  /// 统一展示区域：周期性 + 分期混合
+  SliverList _buildUnifiedCostSection(
     BuildContext context, {
     required String title,
     required String subtitle,
     required Color color,
-    required List<RecurringCost> items,
+    required List<RecurringCost> recurringItems,
+    required List<InstallmentPlan> installmentItems,
     required SleepCostDashboardViewModel vm,
     required SettingsViewModel settings,
   }) {
+    final totalCount = recurringItems.length + installmentItems.length;
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
@@ -625,151 +656,122 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             );
           }
 
-          final item = items[index - 1];
-          final displayAmount =
-              item.dailyCost * vm.displayCycle.actualDays;
-          final dueText = item.isOverdue
-              ? '已逾期'
-              : item.daysUntilDue == 0
-                  ? '今天到期'
-                  : '${item.daysUntilDue}天后到期';
+          final itemIndex = index - 1;
 
-          return Dismissible(
-            key: Key('pay_${item.id}'),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20),
-              color: Colors.green,
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Icon(Icons.check, color: Colors.white),
-                  SizedBox(width: 4),
-                  Text('标记已付',
-                      style: TextStyle(color: Colors.white)),
-                ],
+          // 先显示周期性项，再显示分期项
+          if (itemIndex < recurringItems.length) {
+            final item = recurringItems[itemIndex];
+            final displayAmount =
+                item.dailyCost * vm.displayCycle.actualDays;
+            final dueText = item.isOverdue
+                ? '已逾期'
+                : item.daysUntilDue == 0
+                    ? '今天到期'
+                    : '${item.daysUntilDue}天后到期';
+
+            return Dismissible(
+              key: Key('pay_${item.id}'),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                color: Colors.green,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Icon(Icons.check, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text('标记已付',
+                        style: TextStyle(color: Colors.white)),
+                  ],
+                ),
               ),
-            ),
-            confirmDismiss: (direction) async {
-              await _markAsPaid(context, item);
-              return false;
-            },
-            child: ListTile(
-              leading: Icon(item.category.icon, color: color),
-              title: Text(item.name),
-              subtitle: Text(
-                  '${settings.currency}${item.amount.toStringAsFixed(0)}/${item.billingCycle.displayName} · $dueText'),
-              trailing: Text(
-                '${settings.currency}${displayAmount.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              onTap: () => _navigateToDetail(context, recurringCost: item),
-            ),
-          );
-        },
-        childCount: items.length + 1,
-      ),
-    );
-  }
-
-  SliverList _buildInstallmentSection(
-    BuildContext context,
-    SleepCostDashboardViewModel vm,
-    SettingsViewModel settings,
-  ) {
-    final items = vm.summary.installmentItems;
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          if (index == 0) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF9800),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('分期承诺',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                  const Spacer(),
-                  Text(
-                    '${settings.currency}${vm.installmentDisplayCost.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).colorScheme.outline),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final item = items[index - 1];
-          final displayAmount =
-              item.dailyCost * vm.displayCycle.actualDays;
-
-          return ListTile(
-            leading: const Icon(Icons.credit_card,
-                color: Color(0xFFFF9800)),
-            title: Text(item.name),
-            subtitle: Text(
-                '${settings.currency}${item.monthlyPayment.toStringAsFixed(0)}/月 · 剩余${item.remainingPeriods}期'),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
+              confirmDismiss: (direction) async {
+                await _markAsPaid(context, item);
+                return false;
+              },
+              child: ListTile(
+                leading: Icon(item.category.icon, color: color),
+                title: Text(item.name),
+                subtitle: Text(
+                    '${settings.currency}${item.amount.toStringAsFixed(0)}/${item.billingCycle.displayName} · $dueText'),
+                trailing: Text(
                   '${settings.currency}${displayAmount.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                SizedBox(
-                  width: 60,
-                  child: LinearProgressIndicator(
-                    value: item.progress,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFFFF9800)),
-                  ),
+                onTap: () =>
+                    _navigateToDetail(context, recurringCost: item),
+              ),
+            );
+          } else {
+            // 分期项
+            final item = installmentItems[itemIndex - recurringItems.length];
+            final displayAmount =
+                item.dailyCost * vm.displayCycle.actualDays;
+            final dueText = item.isOverdue
+                ? '已逾期'
+                : item.daysUntilDue == 0
+                    ? '今天到期'
+                    : '${item.daysUntilDue}天后到期';
+
+            return Dismissible(
+              key: Key('pay_inst_${item.id}'),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                color: Colors.green,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Icon(Icons.check, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text('标记已付',
+                        style: TextStyle(color: Colors.white)),
+                  ],
                 ),
-              ],
-            ),
-            onTap: () => _navigateToDetail(context, installmentPlan: item),
-          );
+              ),
+              confirmDismiss: (direction) async {
+                await _markInstallmentAsPaid(context, item);
+                return false;
+              },
+              child: ListTile(
+                leading: Icon(Icons.credit_card, color: color),
+                title: Text(item.name),
+                subtitle: Text(
+                    '${settings.currency}${item.monthlyPayment.toStringAsFixed(0)}/月 · ${item.paidPeriods}/${item.totalPeriods}期 · $dueText'),
+                trailing: Text(
+                  '${settings.currency}${displayAmount.toStringAsFixed(2)}/${vm.displayCycle.unitLabel}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                onTap: () =>
+                    _navigateToDetail(context, installmentPlan: item),
+              ),
+            );
+          }
         },
-        childCount: items.length + 1,
+        childCount: totalCount + 1,
       ),
     );
   }
 
-  void _showAddCostSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => const AddCostItemSheet(),
-    ).then((_) {
-      context.read<SleepCostDashboardViewModel>().loadDashboardData();
-    });
-  }
-
-  SliverList _buildPaidItemsList(
+  /// 统一已缴清区域
+  SliverList _buildUnifiedPaidSection(
     BuildContext context,
-    List<RecurringCost> items,
     SleepCostDashboardViewModel vm,
     SettingsViewModel settings,
   ) {
     final theme = Theme.of(context);
+    final recurringPaid = vm.summary.paidItems;
+    final installmentPaid = vm.summary.installmentMonthlyPaid;
+    final totalPaidAmount =
+        recurringPaid.fold<double>(0, (s, i) => s + i.paymentAmount) +
+        installmentPaid.fold<double>(0, (s, i) => s + i.monthlyPayment);
+    final totalCount = recurringPaid.length + installmentPaid.length;
+
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
-          // Header row
           if (index == 0) {
             return Padding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
@@ -788,7 +790,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                   ),
                   const Spacer(),
                   Text(
-                    '${settings.currency}${items.fold<double>(0, (s, i) => s + i.paymentAmount).toStringAsFixed(0)}',
+                    '${settings.currency}${totalPaidAmount.toStringAsFixed(0)}',
                     style: TextStyle(
                       fontSize: 13,
                       color: theme.colorScheme.outline,
@@ -798,44 +800,55 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               ),
             );
           }
-          final item = items[index - 1];
-          return ListTile(
-            leading: Icon(item.category.icon,
-                color: Colors.grey.shade400),
-            title: Text(
-              item.name,
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                decoration: TextDecoration.lineThrough,
+
+          final itemIndex = index - 1;
+          if (itemIndex < recurringPaid.length) {
+            final item = recurringPaid[itemIndex];
+            return ListTile(
+              leading: Icon(item.category.icon,
+                  color: Colors.grey.shade400),
+              title: Text(
+                item.name,
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  decoration: TextDecoration.lineThrough,
+                ),
               ),
-            ),
-            subtitle: Text(
-              '${settings.currency}${item.amount.toStringAsFixed(0)}/${item.billingCycle.displayName} · 下次: ${item.nextDueDate.month}/${item.nextDueDate.day}',
-              style: TextStyle(color: Colors.grey.shade400),
-            ),
-            trailing: Icon(Icons.check_circle,
-                color: Colors.green.shade300, size: 20),
-            onTap: () => _navigateToDetail(context, recurringCost: item),
-          );
+              subtitle: Text(
+                '${settings.currency}${item.amount.toStringAsFixed(0)}/${item.billingCycle.displayName} · 下次: ${item.nextDueDate.month}/${item.nextDueDate.day}',
+                style: TextStyle(color: Colors.grey.shade400),
+              ),
+              trailing: Icon(Icons.check_circle,
+                  color: Colors.green.shade300, size: 20),
+              onTap: () =>
+                  _navigateToDetail(context, recurringCost: item),
+            );
+          } else {
+            final item = installmentPaid[itemIndex - recurringPaid.length];
+            return ListTile(
+              leading: Icon(Icons.credit_card,
+                  color: Colors.grey.shade400),
+              title: Text(
+                item.name,
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  decoration: TextDecoration.lineThrough,
+                ),
+              ),
+              subtitle: Text(
+                '${settings.currency}${item.monthlyPayment.toStringAsFixed(0)}/月 · ${item.paidPeriods}/${item.totalPeriods}期 · 下次: ${item.nextDueDate.month}/${item.nextDueDate.day}',
+                style: TextStyle(color: Colors.grey.shade400),
+              ),
+              trailing: Icon(Icons.check_circle,
+                  color: Colors.green.shade300, size: 20),
+              onTap: () =>
+                  _navigateToDetail(context, installmentPlan: item),
+            );
+          }
         },
-        childCount: items.length + 1,
+        childCount: totalCount + 1,
       ),
     );
-  }
-
-  Future<void> _markAsPaid(BuildContext context, RecurringCost item) async {
-    final detailVm = context.read<CostItemDetailViewModel>();
-    final paid = item.payAndAdvance();
-    await detailVm.updateRecurringCost(paid);
-    if (context.mounted) {
-      context.read<SleepCostDashboardViewModel>().loadDashboardData();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('「${item.name}」已标记为已支付'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   void _navigateToDetail(

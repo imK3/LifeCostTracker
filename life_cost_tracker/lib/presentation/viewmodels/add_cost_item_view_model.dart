@@ -7,6 +7,7 @@ import '../../domain/entities/recurring_cost.dart';
 import '../../domain/entities/installment_plan.dart';
 import '../../domain/entities/billing_cycle.dart';
 import '../../domain/entities/cost_category.dart';
+import '../../domain/entities/date_utils.dart';
 import '../../domain/usecases/manage_recurring_cost_usecase.dart';
 import '../../domain/usecases/manage_installment_plan_usecase.dart';
 
@@ -51,6 +52,10 @@ class AddCostItemViewModel extends ChangeNotifier {
   double _totalAmount = 0;
   int _totalPeriods = 12;
   double _monthlyPayment = 0;
+  int _installmentPaidPeriods = 0;
+  DateTime? _installmentLastPaidDate;
+  int _installmentDueDay = 1; // 每月几号还款
+  bool _installmentHasPaid = true; // true=已有还款, false=尚未支付
 
   // State - general
   String? _notes;
@@ -75,6 +80,10 @@ class AddCostItemViewModel extends ChangeNotifier {
   double get totalAmount => _totalAmount;
   int get totalPeriods => _totalPeriods;
   double get monthlyPayment => _monthlyPayment;
+  int get installmentPaidPeriods => _installmentPaidPeriods;
+  DateTime? get installmentLastPaidDate => _installmentLastPaidDate;
+  int get installmentDueDay => _installmentDueDay;
+  bool get installmentHasPaid => _installmentHasPaid;
   String? get notes => _notes;
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
@@ -86,7 +95,9 @@ class AddCostItemViewModel extends ChangeNotifier {
     if (_selectedType == AddCostItemType.recurring) {
       return _amount / _basePeriod.daysInCycle;
     } else if (_selectedType == AddCostItemType.installment) {
-      return _monthlyPayment / 30;
+      final now = DateTime.now();
+      final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+      return _monthlyPayment / daysInMonth;
     }
     return 0;
   }
@@ -104,6 +115,10 @@ class AddCostItemViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// 解析数字，兼容逗号小数点（如 304,08 → 304.08）
+  static double? parseNumber(String s) =>
+      double.tryParse(s.replaceAll(',', '.'));
 
   // Field setters
   void setName(String value) {
@@ -145,23 +160,48 @@ class AddCostItemViewModel extends ChangeNotifier {
 
   void setTotalAmount(double value) {
     _totalAmount = value;
-    if (_totalPeriods > 0) {
-      _monthlyPayment = _totalAmount / _totalPeriods;
-    }
     _validateFields();
   }
 
   void setTotalPeriods(int value) {
     _totalPeriods = value;
-    if (_totalPeriods > 0) {
-      _monthlyPayment = _totalAmount / _totalPeriods;
+    // 自动计算总金额
+    if (_totalPeriods > 0 && _monthlyPayment > 0) {
+      _totalAmount = _monthlyPayment * _totalPeriods;
     }
     _validateFields();
   }
 
   void setMonthlyPayment(double value) {
     _monthlyPayment = value;
+    if (_totalPeriods > 0 && _monthlyPayment > 0) {
+      _totalAmount = _monthlyPayment * _totalPeriods;
+    }
     _validateFields();
+  }
+
+  void setInstallmentPaidPeriods(int value) {
+    _installmentPaidPeriods = value.clamp(0, _totalPeriods);
+    _validateFields();
+  }
+
+  void setInstallmentLastPaidDate(DateTime? value) {
+    _installmentLastPaidDate = value;
+    notifyListeners();
+  }
+
+  void setInstallmentDueDay(int value) {
+    _installmentDueDay = value.clamp(1, 31);
+    notifyListeners();
+  }
+
+  void setInstallmentHasPaid(bool value) {
+    _installmentHasPaid = value;
+    if (!value) {
+      _installmentPaidPeriods = 0;
+      _installmentLastPaidDate = null;
+    }
+    notifyListeners();
   }
 
   void setNotes(String? value) {
@@ -178,9 +218,11 @@ class AddCostItemViewModel extends ChangeNotifier {
       _validationErrors.add('金额必须大于 0');
     }
     if (_selectedType == AddCostItemType.installment) {
-      if (_totalAmount <= 0) _validationErrors.add('总金额必须大于 0');
-      if (_totalPeriods <= 0) _validationErrors.add('期数必须大于 0');
-      if (_monthlyPayment <= 0) _validationErrors.add('月供必须大于 0');
+      if (_monthlyPayment <= 0) _validationErrors.add('每月还款必须大于 0');
+      if (_totalPeriods <= 0) _validationErrors.add('总期数必须大于 0');
+      if (_installmentHasPaid && _installmentPaidPeriods > _totalPeriods) {
+        _validationErrors.add('已付期数不能超过总期数');
+      }
     }
     notifyListeners();
   }
@@ -223,13 +265,38 @@ class AddCostItemViewModel extends ChangeNotifier {
         );
         await _addRecurringCostUseCase.call(cost);
       } else if (_selectedType == AddCostItemType.installment) {
+        final now = DateTime.now();
+        DateTime startDate;
+        DateTime nextDueDate;
+        bool isPaid;
+
+        if (_installmentHasPaid && _installmentLastPaidDate != null) {
+          // 有还款记录：从上次支付日期反推 startDate，正推 nextDueDate
+          startDate = addMonths(_installmentLastPaidDate!, -_installmentPaidPeriods + 1);
+          // 从上次支付日期推算下次到期日（+1个月）
+          nextDueDate = addMonths(_installmentLastPaidDate!, 1);
+          // 如果 nextDueDate 还在未来，说明本期已缴
+          isPaid = nextDueDate.isAfter(now);
+        } else {
+          // 尚未支付：从还款日推算
+          var nextDue = safeDate(now.year, now.month, _installmentDueDay);
+          if (nextDue.isBefore(now)) {
+            nextDue = safeDate(now.year, now.month + 1, _installmentDueDay);
+          }
+          startDate = nextDue;
+          nextDueDate = nextDue;
+          isPaid = false;
+        }
+
         final plan = InstallmentPlan(
           name: _name.trim(),
           totalAmount: _totalAmount,
           totalPeriods: _totalPeriods,
-          paidPeriods: 0,
+          paidPeriods: _installmentPaidPeriods,
           monthlyPayment: _monthlyPayment,
-          startDate: DateTime.now(),
+          startDate: startDate,
+          nextDueDate: nextDueDate,
+          isPaidForCurrentPeriod: isPaid,
           notes: _notes,
         );
         await _addInstallmentPlanUseCase.call(plan);
@@ -258,11 +325,11 @@ class AddCostItemViewModel extends ChangeNotifier {
         case BillingCycle.weekly:
           nextDue = DateTime(paid.year, paid.month, paid.day + 7);
         case BillingCycle.monthly:
-          nextDue = DateTime(paid.year, paid.month + 1, paid.day);
+          nextDue = addMonths(paid, 1);
         case BillingCycle.quarterly:
-          nextDue = DateTime(paid.year, paid.month + 3, paid.day);
+          nextDue = addMonths(paid, 3);
         case BillingCycle.yearly:
-          nextDue = DateTime(paid.year + 1, paid.month, paid.day);
+          nextDue = addMonths(paid, 12);
       }
       // 如果推算出的下次到期日已过，继续往前推
       while (nextDue.isBefore(now)) {
@@ -270,11 +337,11 @@ class AddCostItemViewModel extends ChangeNotifier {
           case BillingCycle.weekly:
             nextDue = DateTime(nextDue.year, nextDue.month, nextDue.day + 7);
           case BillingCycle.monthly:
-            nextDue = DateTime(nextDue.year, nextDue.month + 1, nextDue.day);
+            nextDue = addMonths(nextDue, 1);
           case BillingCycle.quarterly:
-            nextDue = DateTime(nextDue.year, nextDue.month + 3, nextDue.day);
+            nextDue = addMonths(nextDue, 3);
           case BillingCycle.yearly:
-            nextDue = DateTime(nextDue.year + 1, nextDue.month, nextDue.day);
+            nextDue = addMonths(nextDue, 12);
         }
       }
       return nextDue;
@@ -289,16 +356,16 @@ class AddCostItemViewModel extends ChangeNotifier {
         return DateTime(now.year, now.month, now.day + daysUntil);
 
       case BillingCycle.monthly:
-        var nextDue = DateTime(now.year, now.month, _dueDay);
+        var nextDue = safeDate(now.year, now.month, _dueDay);
         if (nextDue.isBefore(now)) {
-          nextDue = DateTime(now.year, now.month + 1, _dueDay);
+          nextDue = safeDate(now.year, now.month + 1, _dueDay);
         }
         return nextDue;
 
       case BillingCycle.quarterly:
-        var nextDue = DateTime(now.year, now.month, _dueDay);
+        var nextDue = safeDate(now.year, now.month, _dueDay);
         if (nextDue.isBefore(now)) {
-          nextDue = DateTime(now.year, now.month + 3, _dueDay);
+          nextDue = safeDate(now.year, now.month + 3, _dueDay);
         }
         return nextDue;
 
@@ -325,6 +392,10 @@ class AddCostItemViewModel extends ChangeNotifier {
     _totalAmount = 0;
     _totalPeriods = 12;
     _monthlyPayment = 0;
+    _installmentPaidPeriods = 0;
+    _installmentLastPaidDate = null;
+    _installmentDueDay = 1;
+    _installmentHasPaid = true;
     _notes = null;
     _isSaving = false;
     _errorMessage = null;
