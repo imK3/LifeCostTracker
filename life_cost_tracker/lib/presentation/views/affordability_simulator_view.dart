@@ -36,8 +36,11 @@ class _AffordabilitySimulatorViewState
       ),
       body: Consumer<AffordabilitySimulatorViewModel>(
         builder: (context, vm, child) {
-          return SingleChildScrollView(
+          return GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -71,9 +74,9 @@ class _AffordabilitySimulatorViewState
                             border: OutlineInputBorder(),
                             prefixText: '¥ ',
                           ),
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           onChanged: (v) =>
-                              vm.setTotalCost(double.tryParse(v) ?? 0),
+                              vm.setTotalCost(double.tryParse(v.replaceAll(',', '.')) ?? 0),
                         ),
                         const SizedBox(height: 12),
 
@@ -97,7 +100,7 @@ class _AffordabilitySimulatorViewState
                                     border: OutlineInputBorder(),
                                     suffixText: '期',
                                   ),
-                                  keyboardType: TextInputType.number,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                   onChanged: (v) => vm.setInstallmentPeriods(
                                       int.tryParse(v) ?? 12),
                                 ),
@@ -114,9 +117,9 @@ class _AffordabilitySimulatorViewState
                                             .toStringAsFixed(0)
                                         : null,
                                   ),
-                                  keyboardType: TextInputType.number,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                   onChanged: (v) => vm.setMonthlyPayment(
-                                      double.tryParse(v) ?? 0),
+                                      double.tryParse(v.replaceAll(',', '.')) ?? 0),
                                 ),
                               ),
                             ],
@@ -279,6 +282,7 @@ class _AffordabilitySimulatorViewState
                 ],
               ],
             ),
+          ),
           );
         },
       ),
