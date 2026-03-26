@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/affordability_simulator_view_model.dart';
 import '../viewmodels/settings_view_model.dart';
 import '../viewmodels/sleep_cost_dashboard_view_model.dart';
+import '../../domain/entities/billing_cycle.dart';
 import '../../domain/entities/cost_category.dart';
 import 'add_cost_item_sheet.dart' show CategoryPickerContent;
 
@@ -101,59 +102,151 @@ class _AffordabilitySimulatorViewState
                           const SizedBox(height: 12),
 
                           if (vm.isInstallment) ...[
-                            // 分期：每月还款 + 期数
+                            // 分期输入模式切换
                             Row(
                               children: [
                                 Expanded(
-                                  child: TextField(
-                                    decoration: const InputDecoration(
-                                      labelText: '每月还款',
-                                      border: OutlineInputBorder(),
-                                      prefixText: '¥ ',
-                                    ),
-                                    keyboardType: const TextInputType
-                                        .numberWithOptions(decimal: true),
-                                    onChanged: (v) => vm.setMonthlyPayment(
-                                        double.tryParse(v.replaceAll(
-                                                ',', '.')) ??
-                                            0),
+                                  child: ChoiceChip(
+                                    label: const Text('按每期金额'),
+                                    selected: !vm.installmentByTotal,
+                                    onSelected: (_) =>
+                                        vm.setInstallmentByTotal(false),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 8),
                                 Expanded(
-                                  child: TextField(
-                                    decoration: const InputDecoration(
-                                      labelText: '期数',
-                                      border: OutlineInputBorder(),
-                                      suffixText: '期',
-                                    ),
-                                    keyboardType: const TextInputType
-                                        .numberWithOptions(decimal: true),
-                                    onChanged: (v) =>
-                                        vm.setInstallmentPeriods(
-                                            int.tryParse(v) ?? 12),
+                                  child: ChoiceChip(
+                                    label: const Text('按总金额'),
+                                    selected: vm.installmentByTotal,
+                                    onSelected: (_) =>
+                                        vm.setInstallmentByTotal(true),
                                   ),
                                 ),
                               ],
                             ),
-                            if (vm.monthlyPayment > 0 &&
-                                vm.installmentPeriods > 0) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                '总价 ${settings.currency}${(vm.monthlyPayment * vm.installmentPeriods).toStringAsFixed(0)}',
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: theme.colorScheme.outline),
+                            const SizedBox(height: 12),
+
+                            if (vm.installmentByTotal) ...[
+                              // 总金额 + 期数
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      decoration: const InputDecoration(
+                                        labelText: '总金额',
+                                        border: OutlineInputBorder(),
+                                        prefixText: '¥ ',
+                                      ),
+                                      keyboardType: const TextInputType
+                                          .numberWithOptions(decimal: true),
+                                      onChanged: (v) => vm.setTotalCost(
+                                          double.tryParse(v.replaceAll(
+                                                  ',', '.')) ??
+                                              0),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextField(
+                                      decoration: const InputDecoration(
+                                        labelText: '期数',
+                                        border: OutlineInputBorder(),
+                                        suffixText: '期',
+                                      ),
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (v) =>
+                                          vm.setInstallmentPeriods(
+                                              int.tryParse(v) ?? 12),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              if (vm.totalCost > 0 &&
+                                  vm.installmentPeriods > 0) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  '每期 ${settings.currency}${vm.monthlyPayment.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: theme.colorScheme.outline),
+                                ),
+                              ],
+                            ] else ...[
+                              // 每期金额 + 期数
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      decoration: const InputDecoration(
+                                        labelText: '每期金额',
+                                        border: OutlineInputBorder(),
+                                        prefixText: '¥ ',
+                                      ),
+                                      keyboardType: const TextInputType
+                                          .numberWithOptions(decimal: true),
+                                      onChanged: (v) => vm.setMonthlyPayment(
+                                          double.tryParse(v.replaceAll(
+                                                  ',', '.')) ??
+                                              0),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextField(
+                                      decoration: const InputDecoration(
+                                        labelText: '期数',
+                                        border: OutlineInputBorder(),
+                                        suffixText: '期',
+                                      ),
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (v) =>
+                                          vm.setInstallmentPeriods(
+                                              int.tryParse(v) ?? 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (vm.monthlyPayment > 0 &&
+                                  vm.installmentPeriods > 0) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  '总价 ${settings.currency}${vm.totalCost.toStringAsFixed(0)}',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: theme.colorScheme.outline),
+                                ),
+                              ],
                             ],
                           ] else ...[
-                            // 周期性：每月金额
+                            // 周期性：周期选择 + 金额
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                for (final cycle in [
+                                  BillingCycle.monthly,
+                                  BillingCycle.quarterly,
+                                  BillingCycle.yearly,
+                                ])
+                                  ChoiceChip(
+                                    label: Text(cycle.displayName),
+                                    selected: vm.recurringCycle == cycle,
+                                    onSelected: (_) =>
+                                        vm.setRecurringCycle(cycle),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
                             TextField(
-                              decoration: const InputDecoration(
-                                labelText: '每月金额',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: '${vm.recurringCycle.displayName}金额',
+                                border: const OutlineInputBorder(),
                                 prefixText: '¥ ',
-                                hintText: '例如：月租500',
+                                hintText: vm.recurringCycle == BillingCycle.monthly
+                                    ? '例如：月租500'
+                                    : vm.recurringCycle == BillingCycle.quarterly
+                                        ? '例如：季付1500'
+                                        : '例如：年费6000',
                               ),
                               keyboardType: const TextInputType
                                   .numberWithOptions(decimal: true),
@@ -161,10 +254,19 @@ class _AffordabilitySimulatorViewState
                                 final val = double.tryParse(
                                         v.replaceAll(',', '.')) ??
                                     0;
-                                vm.setMonthlyPayment(val);
-                                vm.setTotalCost(val * 12);
+                                vm.setRecurringAmount(val);
                               },
                             ),
+                            if (vm.recurringAmount > 0 &&
+                                vm.recurringCycle != BillingCycle.monthly) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                '≈ ${settings.currency}${vm.monthlyPayment.toStringAsFixed(2)}/月',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: theme.colorScheme.outline),
+                              ),
+                            ],
                             const SizedBox(height: 12),
 
                             // 分类选择

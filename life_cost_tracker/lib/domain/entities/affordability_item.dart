@@ -39,15 +39,28 @@ class AffordabilityItem {
   /// Daily cost impact if purchased
   /// 如果购买，对每日成本的影响
   double get dailyImpact {
-    if (!isInstallment) return 0;
-    return (monthlyPayment ?? (totalCost / (installmentPeriods ?? 1))) / 30;
+    // Recurring expense with monthlyPayment
+    if (!isInstallment && monthlyPayment != null && monthlyPayment! > 0) {
+      return monthlyPayment! / 30;
+    }
+    // Installment
+    if (isInstallment) {
+      return (monthlyPayment ?? (totalCost / (installmentPeriods ?? 1))) / 30;
+    }
+    // One-time purchase, no recurring impact
+    return 0;
   }
 
   /// Monthly cost impact
   /// 月度成本影响
   double get monthlyImpact {
-    if (!isInstallment) return 0;
-    return monthlyPayment ?? (totalCost / (installmentPeriods ?? 1));
+    if (!isInstallment && monthlyPayment != null && monthlyPayment! > 0) {
+      return monthlyPayment!;
+    }
+    if (isInstallment) {
+      return monthlyPayment ?? (totalCost / (installmentPeriods ?? 1));
+    }
+    return 0;
   }
 
   /// Constructor

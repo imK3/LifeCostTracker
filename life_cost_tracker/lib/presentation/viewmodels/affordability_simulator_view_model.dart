@@ -4,6 +4,7 @@
 
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/affordability_item.dart';
+import '../../domain/entities/billing_cycle.dart';
 import '../../domain/usecases/simulate_affordability_usecase.dart';
 import '../../domain/usecases/manage_affordability_item_usecase.dart';
 
@@ -31,6 +32,9 @@ class AffordabilitySimulatorViewModel extends ChangeNotifier {
   bool _isInstallment = true;
   int _installmentPeriods = 12;
   double _monthlyPayment = 0;
+  bool _installmentByTotal = false; // false=按每期金额, true=按总金额
+  BillingCycle _recurringCycle = BillingCycle.monthly;
+  double _recurringAmount = 0; // raw input amount per cycle
 
   // State - simulation result
   AffordabilityResult? _result;
@@ -44,6 +48,9 @@ class AffordabilitySimulatorViewModel extends ChangeNotifier {
   bool get isInstallment => _isInstallment;
   int get installmentPeriods => _installmentPeriods;
   double get monthlyPayment => _monthlyPayment;
+  bool get installmentByTotal => _installmentByTotal;
+  BillingCycle get recurringCycle => _recurringCycle;
+  double get recurringAmount => _recurringAmount;
   AffordabilityResult? get result => _result;
   List<AffordabilityItem> get savedItems => _savedItems;
   bool get isLoading => _isLoading;
@@ -57,7 +64,7 @@ class AffordabilitySimulatorViewModel extends ChangeNotifier {
 
   void setTotalCost(double value) {
     _totalCost = value;
-    if (_installmentPeriods > 0) {
+    if (_isInstallment && _installmentByTotal && _installmentPeriods > 0) {
       _monthlyPayment = _totalCost / _installmentPeriods;
     }
     notifyListeners();
@@ -65,20 +72,63 @@ class AffordabilitySimulatorViewModel extends ChangeNotifier {
 
   void setIsInstallment(bool value) {
     _isInstallment = value;
+    // Reset amounts when switching mode
+    _monthlyPayment = 0;
+    _totalCost = 0;
+    _recurringAmount = 0;
+    notifyListeners();
+  }
+
+  void setRecurringCycle(BillingCycle value) {
+    _recurringCycle = value;
+    _recalcRecurring();
+    notifyListeners();
+  }
+
+  void setRecurringAmount(double value) {
+    _recurringAmount = value;
+    _recalcRecurring();
+    notifyListeners();
+  }
+
+  void _recalcRecurring() {
+    if (_recurringAmount <= 0) {
+      _monthlyPayment = 0;
+      return;
+    }
+    // Convert per-cycle amount to monthly equivalent
+    _monthlyPayment = _recurringAmount / _recurringCycle.daysInCycle * 30;
+  }
+
+  void setInstallmentByTotal(bool value) {
+    _installmentByTotal = value;
+    // Reset to avoid stale cross-mode data
+    _totalCost = 0;
+    _monthlyPayment = 0;
     notifyListeners();
   }
 
   void setInstallmentPeriods(int value) {
     _installmentPeriods = value;
-    if (_installmentPeriods > 0) {
-      _monthlyPayment = _totalCost / _installmentPeriods;
-    }
+    _recalcInstallment();
     notifyListeners();
   }
 
   void setMonthlyPayment(double value) {
     _monthlyPayment = value;
+    if (_isInstallment && !_installmentByTotal && _installmentPeriods > 0) {
+      _totalCost = _monthlyPayment * _installmentPeriods;
+    }
     notifyListeners();
+  }
+
+  void _recalcInstallment() {
+    if (_installmentPeriods <= 0) return;
+    if (_installmentByTotal && _totalCost > 0) {
+      _monthlyPayment = _totalCost / _installmentPeriods;
+    } else if (!_installmentByTotal && _monthlyPayment > 0) {
+      _totalCost = _monthlyPayment * _installmentPeriods;
+    }
   }
 
   /// Load saved simulation items
@@ -96,24 +146,39 @@ class AffordabilitySimulatorViewModel extends ChangeNotifier {
     }
   }
 
+  /// Build AffordabilityItem from current inputs
+  AffordabilityItem? _buildItem() {
+    if (_name.trim().isEmpty || _monthlyPayment <= 0) return null;
+
+    // Ensure totalCost is consistent
+    double totalCost = _totalCost;
+    if (_isInstallment && totalCost <= 0) {
+      totalCost = _monthlyPayment * _installmentPeriods;
+    }
+    if (!_isInstallment && totalCost <= 0) {
+      totalCost = _monthlyPayment * 12;
+    }
+
+    return AffordabilityItem(
+      name: _name.trim(),
+      totalCost: totalCost,
+      isInstallment: _isInstallment,
+      installmentPeriods: _isInstallment ? _installmentPeriods : null,
+      monthlyPayment: _monthlyPayment,
+    );
+  }
+
   /// Run simulation with current input
   /// 使用当前输入运行模拟
   Future<void> simulate() async {
-    if (_name.trim().isEmpty || _totalCost <= 0) return;
+    final item = _buildItem();
+    if (item == null) return;
 
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final item = AffordabilityItem(
-        name: _name.trim(),
-        totalCost: _totalCost,
-        isInstallment: _isInstallment,
-        installmentPeriods: _isInstallment ? _installmentPeriods : null,
-        monthlyPayment: _isInstallment ? _monthlyPayment : null,
-      );
-
       _result = await _simulateUseCase.call(item);
     } catch (e) {
       _errorMessage = '模拟失败: $e';
@@ -125,15 +190,8 @@ class AffordabilitySimulatorViewModel extends ChangeNotifier {
 
   /// Save current simulation as a saved item
   Future<void> saveCurrentItem() async {
-    if (_name.trim().isEmpty || _totalCost <= 0) return;
-
-    final item = AffordabilityItem(
-      name: _name.trim(),
-      totalCost: _totalCost,
-      isInstallment: _isInstallment,
-      installmentPeriods: _isInstallment ? _installmentPeriods : null,
-      monthlyPayment: _isInstallment ? _monthlyPayment : null,
-    );
+    final item = _buildItem();
+    if (item == null) return;
 
     await _addItemUseCase.call(item);
     await loadSavedItems();
@@ -150,8 +208,11 @@ class AffordabilitySimulatorViewModel extends ChangeNotifier {
     _name = '';
     _totalCost = 0;
     _isInstallment = true;
+    _installmentByTotal = false;
     _installmentPeriods = 12;
     _monthlyPayment = 0;
+    _recurringCycle = BillingCycle.monthly;
+    _recurringAmount = 0;
     _result = null;
     _errorMessage = null;
     notifyListeners();
