@@ -76,18 +76,21 @@ class SimulateAffordabilityUseCase
     double dailyIncrease,
     AffordabilityItem item,
   ) {
-    if (!item.isInstallment) {
+    // True one-time purchase: not installment and no recurring monthly payment
+    if (!item.isInstallment && item.dailyImpact == 0) {
       return '一次性支出不影响你的睡后成本，但会减少你的现金储备。';
     }
 
+    final label = item.isInstallment ? '分期结束前，睡后成本' : '周期性支出将使睡后成本';
+
     if (percentageIncrease <= 5) {
-      return '影响较小，你的睡后成本仅增加 ${percentageIncrease.toStringAsFixed(1)}%，可以承担。';
+      return '影响较小，$label仅增加 ${percentageIncrease.toStringAsFixed(1)}%，可以承担。';
     } else if (percentageIncrease <= 15) {
       return '有一定影响，每天多花 ¥${dailyIncrease.toStringAsFixed(2)}，建议评估是否必要。';
     } else if (percentageIncrease <= 30) {
-      return '影响较大，睡后成本增加 ${percentageIncrease.toStringAsFixed(1)}%，建议谨慎考虑。';
+      return '影响较大，$label增加 ${percentageIncrease.toStringAsFixed(1)}%，建议谨慎考虑。';
     } else {
-      return '影响显著，睡后成本增加超过 30%，强烈建议重新评估。';
+      return '影响显著，$label增加超过 30%，强烈建议重新评估。';
     }
   }
 }
