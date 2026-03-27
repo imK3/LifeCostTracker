@@ -140,6 +140,20 @@ lib/
     └── views/       # Dashboard, Calendar, Simulator, Settings...
 ```
 
+## Donate
+
+一个人写代码有时候挺孤独的，如果这个小工具刚好帮到了你，那就太好了 🥹
+
+请我喝杯咖啡？会让我开心一整天的那种 ☕✨
+
+<div align="center">
+<img src="docs/screenshots/eth_address.gif" width="200" />
+
+`0x6dd5D3b87aAC6E0CB31F74248451D7536001f0c3`
+
+<sub>ETH / ERC-20 · 不管多少都是心意 💛</sub>
+</div>
+
 ## License
 
 [MIT](LICENSE)
